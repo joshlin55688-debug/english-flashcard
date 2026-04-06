@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英文閃卡學習系統</title>
+<style>
+  :root {
+    --primary: #6C63FF;
+    --primary-light: #8B85FF;
+    --secondary: #FF6584;
+    --accent: #43E97B;
+    --warning: #F7971E;
+    --bg: #0F0F1A;
+    --bg2: #1A1A2E;
+    --card: #16213E;
+    --card2: #1F2D47;
+    --text: #E8E8F0;
+    --text2: #9A9ABB;
+    --border: #2D2D50;
+    --green: #43E97B;
+    --yellow: #F7971E;
+    --red: #FF6584;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+  /* NAV */
+  nav { background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; height:58px; position:sticky; top:0; z-index:100; }
+  .nav-logo { font-size:1.2rem; font-weight:700; background:linear-gradient(135deg,var(--primary),var(--secondary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-right:30px; white-space:nowrap; }
+  .nav-tabs { display:flex; gap:4px; }
+  .nav-tab { background:none; border:none; color:var(--text2); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:.9rem; transition:.2s; white-space:nowrap; }
+  .nav-tab.active, .nav-tab:hover { background:var(--primary); color:#fff; }
+
+  /* MAIN */
+  main { max-width:900px; margin:0 auto; padding:30px 16px; }
+  .section { display:none; }
+  .section.active { display:block; }
+
+  /* === FLASHCARD === */
+  .fc-controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+  .fc-controls select, .fc-controls button { padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); cursor:pointer; font-size:.85rem; }
+  .fc-controls button { background:var(--primary); border-color:var(--primary); }
+  .fc-controls button:hover { opacity:.85; }
+  .fc-progress-bar-wrap { background:var(--border); border-radius:8px; height:8px; flex:1; min-width:120px; overflow:hidden; }
+  .fc-progress-bar { height:100%; border-radius:8px; background:linear-gradient(90deg,var(--primary),var(--accent)); transition:width .4s; }
+  .fc-counter { font-size:.85rem; color:var(--text2); white-space:nowrap; }
+
+  .card-area { perspective:1200px; margin:0 auto 24px; max-width:560px; height:300px; }
+  .card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.4,0,.2,1); cursor:pointer; }
+  .card-inner.flipped { transform:rotateY(180deg); }
+  .card-face { position:absolute; inset:0; border-radius:20px; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:28px; text-align:center; }
+  .card-front { background:linear-gradient(135deg,var(--card),var(--card2)); border:1px solid var(--border); }
+  .card-back { background:linear-gradient(135deg,#1a1066,#0d2040); border:1px solid var(--primary); transform:rotateY(180deg); }
+  .card-word { font-size:2.4rem; font-weight:700; letter-spacing:.5px; }
+  .card-hint { font-size:.8rem; color:var(--text2); margin-top:12px; }
+  .card-phonetic { font-size:1.1rem; color:var(--primary-light); margin-bottom:6px; }
+  .card-pos { font-size:.78rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; margin-bottom:8px; display:inline-block; }
+  .card-meaning { font-size:1.5rem; font-weight:600; margin-bottom:10px; }
+  .card-example { font-size:.82rem; color:var(--text2); line-height:1.6; font-style:italic; }
+  .card-topic-badge { position:absolute; top:14px; right:14px; font-size:.w$em; padding:3px 8px; border-radius:10px; }
+  .badge-daily { background:#1a4a3a; color:var(--accent); }
+  .badge-travel { background:#1a3a4a; color:#5BE0FF; }
+  .badge-work { background:#3a1a4a; color:#C084FC; }
+  .badge-academic { background:#4a3a1a; color:var(--warning); }
+
+  .rating-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .rating-btn { padding:12px 28px; border-radius:10px; border:none; cursor:pointer; font-size:.95rem; font-weight:600; transition:.2s; }
+  .rating-btn:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.3); }
+  .btn-hard { background:var(--red); color:#fff; }
+  .btn-ok { background:var(--yellow); color:#fff; }
+  .btn-easy { background:var(--green); color:#111; }
+
+  .fc-done { text-align:center; padding:60px 20px; }
+  .fc-done .big-icon { font-size:4rem; margin-bottom:16px; }
+  .fc-done h2 { font-size:1.6rem; margin-bottom:8px; }
+  .fc-done p { color:var(--text2); margin-bottom:20px; }
+  .btn-primary { background:var(--primary); color:#fff; border:none; padding:12px 28px; border-radius:10px; cursor:pointer; font-size:1rem; font-weight:600; }
+
+  /* === QUIZ === */
+  .quiz-header { display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+  .quiz-progress-wrap { flex:1; min-width:150px; }
+  .quiz-progress-label { display:flex; justify-content:space-between; font-size:.78rem; color:var(--text2); margin-bottom:4px; }
+  .quiz-progress-bar-wrap { background:var(--border); border-radius:8px; height:8px; overflow:hidden; }
+  .quiz-progress-bar { height:100%; border-radius:8px; background:linear-gradient(90deg,var(--primary),var(--secondary)); transition:width .3s; }
+  .quiz-score-badge { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:6px 14px; font-size:.85rem; }
+
+  .quiz-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px; }
+  .quiz-question { font-size:1.5rem; font-weight:700; text-align:center; margin-bottom:8px; }
+  .quiz-phonetic { text-align:center; color:var(--primary-light); font-size:.95rem; margin-bottom:20px; }
+  .quiz-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .quiz-option { background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:14px 18px; cursor:pointer; font-size:.9rem; transition:.2s; text-align:left; }
+  .quiz-option:hover:not(.disabled) { border-color:var(--primary); }
+  .quiz-option.correct { border-color:var(--green); background:#0d2a1a; color:var(--green); }
+  .quiz-option.wrong { border-color:var(--red); background:#2a0d0d; color:var(--red); }
+  .quiz-option.disabled { cursor:default; }
+
+  /* === PROGRESS === */
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; text-align:center; }
+  .stat-num { font-size:2rem; font-weight:700; }
+  .stat-label { font-size:.78rem; color:var(--text2); margin-top:4px; }
+  .stat-card.c1 .stat-num { color:var(--primary); }
+  .stat-card.c2 .stat-num { color:var(--yellow); }
+  .stat-card.c3 .stat-num { color:var(--green); }
+  .stat-card.c4 .stat-num { color:var(--secondary); }
+
+  .progress-section { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .progress-section h3 { margin-bottom:18px; font-size:1rem; color:var(--text2); }
+  .prog-row { margin-bottom:14px; }
+  .prog-row-header { display:flex; justify-content:space-between; font-size:.82rem; margin-bottom:5px; }
+  .prog-bar-bg { background:var(--border); border-radius:6px; height:10px; overflow:hidden; }
+  .prog-bar-fill { height:100%; border-radius:6px; transition:width .5s; }
+
+  .donut-wrap { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  svg.donut { width:120px; height:120px; }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:.82rem; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  .week-bars { display:flex; align-items:flex-end; gap:8px; height:80px; }
+  .week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+  .week-bar { width:100%; border-radius:4px 4px 0 0; background:linear-gradient(to top,var(--primary),var(--primary-light)); min-height:4px; transition:height .4s; }
+  .week-day { font-size:.w$em; color:var(--text2); }
+
+  /* === VOCABULARY === */
+  .vocab-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .vocab-search { flex:1; min-width:160px; padding:9px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:.88rem; outline:none; }
+  .vocab-search:focus { border-color:var(--primary); }
+  .filter-btn { padding:7px 14px; border-radius:8px; border:1.5px solid var(--border); background:none; color:var(--text2); cursor:pointer; font-size:.82rem; transition:.2s; }
+  .filter-btn.active { border-color:var(--primary); color:var(--primary); background:rgba(108,99,255,.1); }
+
+  .vocab-table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { background:var(--card2); padding:10px 14px; text-align:left; color:var(--text2); font-weight:600; border-bottom:1px solid var(--border); }
+  td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+  tr:hover td { background:var(--card); }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+  .status-new { background:var(--text2); }
+  .status-learning { background:var(--yellow); }
+  .status-mastered { background:var(--green); }
+
+  @media(max-width:600px) {
+    .quiz-options { grid-template-columns:1fr; }
+    .card-word { font-size:1.8rem; }
+    .nav-tabs { overflow-x:auto; padding-bottom:2px; }
+    .nav-tab { font-size:.8rem; padding:6px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">📚 FlashLearn</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('flashcard')">🃏 閃卡</button>
+    <button class="nav-tab" onclick="showSection('quiz')">✏️ 測驗</button>
+    <button class="nav-tab" onclick="showSection('progress')">📊 進度</button>
+    <button class="nav-tab" onclick="showSection('vocab')">📖 單字庫</button>
+  </div>
+</nav>
+
+<main>
+  <!-- FLASHCARD -->
+  <div id="sec-flashcard" class="section active">
+    <div class="fc-controls">
+      <select id="fc-topic" onchange="initFlashcard()">
+        <option value="all">全部主題</option>
+        <option value="daily">日常生活</option>
+        <option value="travel">旅遊</option>
+        <option value="work">職場</option>
+        <option value="academic">學術</option>
+      </select>
+      <select id="fc-mode" onchange="initFlashcard()">
+        <option value="all">全部單字</option>
+        <option value="due">今日複習</option>
+        <option value="new">只看新字</option>
+      </select>
+      <button onclick="initFlashcard()">🔀 隨機</button>
+      <div class="fc-progress-bar-wrap"><div class="fc-progress-bar" id="fc-pbar" style="width:0%"></div></div>
+      <span class="fc-counter" id="fc-counter">0 / 0</span>
+    </div>
+    <div id="fc-main"></div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="sec-quiz" class="section">
+    <div class="quiz-header">
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-label"><span id="q-prog-text">0 / 0</span><span id="q-score-text">正確：0</span></div>
+        <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="q-pbar" style="width:0%"></div></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="q-topic" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
+          <option value="all">全部</option>
+          <option value="daily">日常</option>
+          <option value="travel">旅遊</option>
+          <option value="work">職場</option>
+          <option value="academic">學術</option>
+        </select>
+        <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">開始測驗</button>
+      </div>
+    </div>
+    <div id="quiz-main"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="sec-progress" class="section">
+    <div class="stats-grid">
+      <div class="stat-card c1"><div class="stat-num" id="st-total">0</div><div class="stat-label">總單字數</div></div>
+      <div class="stat-card c2"><div class="stat-num" id="st-learning">0</div><div class="stat-label">學習中</div></div>
+      <div class="stat-card c3"><div class="stat-num" id="st-mastered">0</div><div class="stat-label">已熟悉</div></div>
+      <div class="stat-card c4"><div class="stat-num" id="st-streak">0</div><div class="stat-label">連續天數 🔥</div></div>
+    </div>
+    <div class="progress-section">
+      <h3>📈 熟悉度分佈</h3>
+      <div class="donut-wrap">
+        <svg class="donut" viewBox="0 0 42 42" id="donut-svg"></svg>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--text2)"></div><span id="leg-new">未學習</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span id="leg-learning">學習中</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span id="leg-mastered">已熟悉</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="progress-section">
+      <h3>🎯 各主題進度</h3>
+      <div id="topic-bars"></div>
+    </div>
+    <div class="progress-section">
+      <h3>📅 本週學習量</h3>
+      <div class="week-bars" id="week-bars"></div>
+    </div>
+  </div>
+
+  <!-- VOCAB -->
+  <div id="sec-vocab" class="section">
+    <div class="vocab-toolbar">
+      <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="renderVocab()">
+      <button class="filter-btn active" data-topic="all" onclick="setVocabFilter('all')">全部</button>
+      <button class="filter-btn" data-topic="daily" onclick="setVocabFilter('daily')">日常</button>
+      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旅遊</button>
+      <button class="filter-btn" data-topic="work" onclick="setVocabFilter('work')">職場</button>
+      <button class="filter-btn" data-topic="academic" onclick="setVocabFilter('academic')">學術</button>
+    </div>
+    <div class="vocab-table-wrap">
+      <table>
+        <thead><tr><th>單字</th><th>音標</th><th>詞性</th><th>中文</th><th>狀態</th></tr></thead>
+        <tbody id="vocab-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+// ===================== WORD DATA =====================
+const WORDS = [
+  // DAILY
+  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals this year.',topic:'daily'},
+  {id:'appreciate',w:'appreciate',ph:'/əˈpriːʃieɪt/',pos:'v.',zh:'感謝；欣賞',ex:'I really appreciate your help with this project.',topic:'daily'},
+  {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可用的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
+  {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
+  {id:'convenient',w:'convenient',ph:'/kənˈviːniənt/',pos:'adj.',zh:'方便的',ex:'The supermarket is very convenient—it\'s just around the corner.',topic:'daily'},
+  {id:'describe',w:'describe',ph:'/dɪˈskraɪb/',pos:'v.',zh:'描述；形容',ex:'Can you describe what the man looked like?',topic:'daily'},
+  {id:'difference',w:'difference',ph:'/ˈdɪfrəns/',pos:'n.',zh:'彮異；不同',ex:'What is the difference between these two products?',topic:'daily'},
+  {id:'experience',w:'experience',ph:'/ɪkˈspɪəriəns/',pos:'n.',zh:'經驗；體驗',ex:'Living abroad was a wonderful experience for her.',topic:'daily'},
+  {id:'familiar',w:'familiar',ph:'/fəˈmɪliər/',pos:'adj.',zh:'熟悉的',ex:'This song sounds familiar—I\'ve heard it before.',topic:'daily'},
+  {id:'fortunately',w:'fortunately',ph:'/ˈfɔːtʃənətli/',pos:'adv.',zh:'幸運地',ex:'Fortunately, no one was hurt in the accident.',topic:'daily'},
+  {id:'generally',w:'generally',ph:'/ˈdʒenərəli/',pos:'adv.',zh:'通常；一般地',ex:'I generally wake up at seven in the morning.',topic:'daily'},
+  {id:'hesitate',w:'hesitate',ph:'/ˈhezɪteɪt/',pos:'v.',zh:'猶豫；遲疑',ex:'Don\'t hesitate to ask if you need any help.',topic:'daily'},
+  {id:'improve',w:'improve',ph:'/ɪmˈpruːv/',pos:'v.',zh:'改善；進步',ex:'She practices every day to improve her English.',topic:'daily'},
+  {id:'involve',w:'involve',ph:'/ɪnˈvɒlv/',pos:'v.',zh:'哈含；使參與',ex:'The project involves a lot of teamwork.',topic:'daily'},
+  {id:'mention',w:'mention',ph:'/ˈmenʃən/',pos:'v.',zh:'提到；提及',ex:'Did he mention when he would be back?',topic:'daily'},
+  // TRAVEL
+  {id:'accommodation',w:'accommodation',ph:'/əˌkɒməˈdeɪʃən/',pos:'n.',zh:'住宿；膳宿',ex:'We booked accommodation near the beach.',topic:'travel'},
+  {id:'adventure',w:'adventure',ph:'/ədˈventʃər/',pos:'n.',zh:'冒險；探險',ex:'Backpacking through Asia was a real adventure.',topic:'travel'},
+  {id:'attraction',w:'attraction',ph:'/əˈtrækʃən/',pos:'n.',zh:'景點；吸引力',ex:'The Eiffel Tower is the city\'s top attraction.',topic:'travel'},
+  {id:'cancel',w:'cancel',ph:'/ˈkænsəl/',pos:'v.',zh:'取消',ex:'We had to cancel our flight due to bad weather.',topic:'travel'},
+  {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
+  {id:'currency',w:'currency',ph:'/ˈkʌrənsi/',pos:'n.',zh:'貨幣；幣制',ex:'You should exchange currency before the trip.',topic:'travel'},
+  {id:'destination',w:'destination',ph:'/ˌdestɪˈneɪʃən/',pos:'n.',zh:'目的地',ex:'Paris was our final destination.',topic:'travel'},
+  {id:'departure',w:'departure',ph:'/dɪˈpɑːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
+  {id:'explore',w:'explore',ph:'/ɪkˈsplɔːr/',pos:'v.',zh:'探索；探險',ex:'We spent the afternoon exploring the old town.',topic:'travel'},
+  {id:'itinerary',w:'itinerary',ph:'/aɪˈtɪnərəri/',pos:'n.',zh:'旅行路線；行程表',ex:'The travel agent prepared a detailed itinerary.',topic:'travel'},
+  {id:'navigate',w:'navigate',ph:'/ˈnævɪɡeɪt/',pos:'v.',zh:'導航；找路',ex:'It\'s easy to navigate the city with a map app.',topic:'travel'},
+  {id:'passport',w:'passport',ph:'/ˈpɑːspɔːt/',pos:'n.',zh:'護照',ex:'Make sure your passport is valid before travelling.',topic:'travel'},
+  {id:'souvenir',w:'souvenir',ph:'/ˌsuːvəˈnɪər/',pos:'n.',zh:'紀念品',ex:'She bought a souvenir for her sister back home.',topic:'travel'},
+  // WORK
+  {id:'achieve',w:'achieve',ph:'/əˈtʃiːv/',pos:'v.',zh:'達成；實現',ex:'Hard work helped her achieve her career goals.',topic:'work'},
+  {id:'collaborate',w:'collaborate',ph:'/kəˈlæbəreɪt/',pos:'v.',zh:'合作；協作',ex:'Our teams collaborate on projects across offices.',topic:'work'},
+  {id:'deadline',w:'deadline',ph:'/ˈdedlaɪn/',pos:'n.',zh:'截止日期',ex:'We must submit the report before the deadline.',topic:'work'},
+  {id:'delegate',w:'delegate',ph:'/ˈdelɪɡeɪt/',pos:'v.',zh:'授權；委派',ex:'A good manager knows how to delegate tasks.',topic:'work'},
+  {id:'efficient',w:'efficient',ph:'/ɪˈfɪʃənt/',pos:'adj.',zh:'有效率的',ex:'She found a more efficient way to organize files.',topic:'work'},
+  {id:'implement',w:'implement',ph:'/ˈɪmplɪment/',pos:'v.',zh:'實施；執行',ex:'The company will implement the new policy next month.',topic:'work'},
+  {id:'negotiate',w:'negotiate',ph:'/nɪˈɡoʊʃieɪt/',pos:'v.',zh:'協商；談判',ex:'They negotiated a better deal with the supplier.',topic:'work'},
+  {id:'opportunity',w:'opportunity',ph:'/ˌɒpəˈtjuːnɪti/',pos:'n.',zh:'機會',ex:'This is a great opportunity to expand your skills.',topic:'work'},
+  {id:'performance',w:'performance',ph:'/pəˈfɔːməns/',pos:'n.',zh:'表現；績效',ex:'Her performance this quarter was outstanding.',topic:'work'},
+  {id:'prioritize',w:'prioritize',ph:'/praɪˈɒrɪtaɪz/',pos:'v.',zh:'優先處理',ex:'Learn to prioritize tasks to manage your time well.',topic:'work'},
+  {id:'proposal',w:'proposal',ph:'/prəˈpoʊzəl/',pos:'n.',zh:'提案；建議書',ex:'The team submitted a proposal for the new project.',topic:'work'},
+  {id:'reliable',w:'reliable',ph:'/rɪˈlaɪəbl/',pos:'adj.',zh:'可靠的；可信賴的',ex:'We need a reliable partner for this project.',topic:'work'},
+  {id:'strategy',w:'strategy',ph:'/ˈstrætədʒi/',pos:'n.',zh:'策略；戰略',ex:'They developed a new marketing strategy.',topic:'work'},
+  {id:'supervise',w:'supervise',ph:'/ˈsuːpəvaɪz/',pos:'v.',zh:'監督；指導',ex:'She supervises a team of ten engineers.',topic:'work'},
+  // ACADEMIC
+  {id:'ambiguous',w:'ambiguous',ph:'/æmˈbɪɡjuəs/',pos:'adj.',zh:'模稜兩可的；含糊的',ex:'The instructions were ambiguous and confused everyone.',topic:'academic'},
+  {id:'analyze',w:'analyze',ph:'/ˈænəlaɪz/',pos:'v.',zh:'分析',ex:'Students are asked to analyze the poem in detail.',topic:'academic'},
+  {id:'anticipate',w:'anticipate',ph:'/ænˈtɪsɪpeɪt/',pos:'v.',zh:'預期；期待',ex:'We anticipate a rise in demand next quarter.',topic:'academic'},
+  {id:'comprehensive',w:'comprehensive',ph:'/ˌkɒmprɪˈhensɪv/',pos:'adj.',zh:'全面的；廣泛的',ex:'The report provides a comprehensive overview.',topic:'academic'},
+  {id:'conclude',w:'conclude',ph:'/kənˈkluːd/',pos:'v.',zh:'得出結論；結束',ex:'The study concludes that exercise reduces stress.',topic:'academic'},
+  {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreint/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
+  {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
+  {id:'fundamental',w:'fundamental',ph:'/ˌfʌndəˈmentəl/',pos:'adj.',zh:'基本的；根本的',ex:'Respect is fundamental to any good relationship.',topic:'academic'},
+  {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɲθɪsɪs/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
+  {id:'illustrate',w:'illustrate',ph:'/ˈɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
+  {id:'investigate',w:'investigate',ph:'/ɪnˈvestɪɡeɪt/',pos:'v.',zh:'調查；研究',ex:'Researchers investigate the causes of the disease.',topic:'academic'},
+  {id:'significant',w:'significant',ph:'/sɪɡˈnɪfɪkənt/',pos:'adj.',zh:'重要的；顯著的',ex:'There has been a significant improvement in results.',topic:'academic'},
+  {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉變；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
+  {id:'variable',w:'variable',ph:'/ˈveəriəbl/',pos:'n.',zh:'袺���；可變因素',ex:'The experiment controlled for all variables.',topic:'academic'},
+];
+
+// ===================== STATE =====================
+function loadState() {
+  try { return JSON.parse(localStorage.getItem('flState')) || {}; } catch(e) { return {}; }
+}
+function saveState() { localStorage.setItem('flState', JSON.stringify(STATE)); }
+
+let STATE = loadState();
+// Init missing words
+WORDS.forEach(w => {
+  if (!STATE[w.id]) STATE[w.id] = { interval:1, ef:2.5, due:0, reps:0, status:'new' };
+});
+
+// Streak
+function getDateStr(d) { return (d||new Date()).toISOString().slice(0,10); }
+function updateStreak() {
+  const today = getDateStr();
+  if (!STATE._streak) STATE._streak = { last:'', count:0, week:{} };
+  if (STATE._streak.last !== today) {
+    const yesterday = getDateStr(new Date(Date.now()-86400000));
+    STATE._streak.count = (STATE._streak.last === yesterday) ? STATE._streak.count+1 : 1;
+    STATE._streak.last = today;
+    if (!STATE._streak.week) STATE._streak.week = {};
+    STATE._streak.week[today] = (STATE._streak.week[today]||0)+1;
+    saveState();
+  }
+}
+updateStreak();
+
+// ===================== SM-2 =====================
+function sm2(id, q) { // q: 0=hard,3=ok,5=easy
+  const s = STATE[id];
+  if (q < 3) {
+    s.reps = 0; s.interval = 1;
+  } else {
+    if (s.reps === 0) s.interval = 1;
+    else if (s.reps === 1) s.interval = 6;
+    else s.interval = Math.round(s.interval * s.ef);
+    s.reps++;
+    s.ef = Math.max(1.3, s.ef + 0.1 - (5-q)*(0.08+(5-q)*0.02));
+  }
+  s.due = Date.now() + s.interval * 86400000;
+  s.status = s.reps >= 3 ? 'mastered' : 'learning';
+  STATE._streak.week[getDateStr()] = (STATE._streak.week[getDateStr()]||0)+1;
+  saveState();
+}
+
+// ===================== NAV =====================
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='progress') renderProgress();
+  if (id==='vocab') renderVocab();
+}
+
+// ===================== FLASHCARD =====================
+let FC = { deck:[], idx:0, flipped:false };
+
+function getFilteredWords(topic, mode) {
+  let ws = WORDS.filter(w => topic==='all' || w.topic===topic);
+  if (mode==='due') ws = ws.filter(w => STATE[w.id].due <= Date.now());
+  if (mode==='new') ws = ws.filter(w => STATE[w.id].status==='new');
+  return ws;
+}
+
+function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function initFlashcard() {
+  const topic = document.getElementById('fc-topic').value;
+  const mode = document.getElementById('fc-mode').value;
+  FC.deck = shuffle(getFilteredWords(topic, mode));
+  FC.idx = 0; FC.flipped = false;
+  renderFC();
+}
+
+function renderFC() {
+  const el = document.getElementById('fc-main');
+  if (FC.deck.length === 0) {
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">🎉</div><h2>沒有符合條件的單字</h2><p>請更換篩選條件</p><button class="btn-primary" onclick="document.getElementById('fc-mode').value='all';initFlashcard()">顯示全部</button></div>`;
+    return;
+  }
+  if (FC.idx >= FC.deck.length) {
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">🏆</div><h2>本輪完成！</h2><p>你已複習完 ${FC.deck.length} 個單字</p><button class="btn-primary" onclick="initFlashcard()">再來一輪</button></div>`;
+    updatePbar(FC.deck.length, FC.deck.length);
+    return;
+  }
+  const w = FC.deck[FC.idx];
+  updatePbar(FC.idx, FC.deck.length);
+  const topicMap = {daily:'日常生活 badge-daily',travel:'旅遊 badge-travel',work:'職場 badge-work',academic:'學術 badge-academic'};
+  const [topicZh, topicCls] = topicMap[w.topic].split(' ');
+  el.innerHTML = `
+    <div class="card-area" onclick="flipCard()">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <span class="card-topic-badge ${topicCls}">${topicZh}</span>
+          <div class="card-word">${w.w}</div>
+          <div class="card-hint">點擊卡片查看答案</div>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-topic-badge ${topicCls}">${topicZh}</span>
+          <div class="card-phonetic">${w.ph}</div>
+          <div class="card-pos">${w.pos}</div>
+          <div class="card-meaning">${w.zh}</div>
+          <div class="card-example">"${w.ex}"</div>
+        </div>
+      </div>
+    </div>
+    <div class="rating-btns" id="rating-btns" style="display:none">
+      <button class="rating-btn btn-hard" onclick="rate(0)">😓 不熟</button>
+      <button class="rating-btn btn-ok" onclick="rate(3)">🤔 普通</button>
+      <button class="rating-btn btn-easy" onclick="rate(5)">😊 熟悉</button>
+    </div>
+    <div id="rating-hint" style="text-align:center;color:var(--text2);font-size:.8rem;margin-top:10px;">翻牌後評分 • 空白鍵翻牌 • 1/2/3 評分</div>
+  `;
+  FC.flipped = false;
+}
+
+function flipCard() {
+  FC.flipped = !FC.flipped;
+  document.getElementById('card-inner').classList.toggle('flipped', FC.flipped);
+  if (FC.flipped) {
+    document.getElementById('rating-btns').style.display = 'flex';
+    document.getElementById('rating-hint').style.display = 'none';
+  }
+}
+
+function rate(q) {
+  sm2(FC.deck[FC.idx].id, q);
+  FC.idx++;
+  renderFC();
+}
+
+function updatePbar(cur, total) {
+  const pct = total ? Math.round(cur/total*100) : 0;
+  document.getElementById('fc-pbar').style.width = pct+'%';
+  document.getElementById('fc-counter').textContent = `${cur} / ${total}`;
+}
+
+document.addEventListener('keydown', e => {
+  const sec = document.querySelector('.section.active');
+  if (!sec || sec.id !== 'sec-flashcard') return;
+  if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); if (!FC.flipped) flipCard(); }
+  if (e.key === '1') { if (FC.flipped) rate(0); }
+  if (e.key === '2') { if (FC.flipped) rate(3); }
+  if (e.key === '3') { if (FC.flipped) rate(5); }
+});
+
+// ===================== QUIZ =====================
+let QZ = { deck:[], idx:0, correct:0, answered:false };
+
+function startQuiz() {
+  const topic = document.getElementById('q-topic').value;
+  QZ.deck = shuffle(getFilteredWords(topic, 'all').slice(0, 20));
+  QZ.idx = 0; QZ.correct = 0; QZ.answered = false;
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const el = document.getElementById('quiz-main');
+  if (QZ.deck.length === 0) {
+    el.innerHTML = '<p style="color:var(--text2);text-align:center;padding:40px;">請先選擇主題$��點擊「開始測驗」</p>';
+    updateQPbar(0, 0);
+    return;
+  }
+  if (QZ.idx >= QZ.deck.length) {
+    const pct = Math.round(QZ.correct/QZ.deck.length*100);
+    const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '📚';
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">${emoji}</div><h2>測驗完成！</h2><p>正確率：${QZ.correct} / ${QZ.deck.length}（${pct}%）</p><button class="btn-primary" onclick="startQuiz()">再測一次</button></div>`;
+    updateQPbar(QZ.deck.length, QZ.deck.length);
+    return;
+  }
+  const w = QZ.deck[QZ.idx];
+  const wrong = shuffle(WORDS.filter(x=>x.id!==w.id)).slice(0,3);
+  const options = shuffle([w, ...wrong]);
+  updateQPbar(QZ.idx, QZ.deck.length);
+  el.innerHTML = `
+    <div class="quiz-card">
+      <div class="quiz-question">${w.w}</div>
+      <div class="quiz-phonetic">${w.ph} &nbsp; ${w.pos}</div>
+      <div class="quiz-options">
+        ${options.map((o,i) => `<button class="quiz-option" id="qopt-${i}" onclick="answerQuiz('${o.id}','${w.id}',${i})">${o.zh}</button>`).join('')}
+      </div>
+    </div>
+  `;
+  QZ.answered = false;
+}
+
+function answerQuiz(chosen, correct, btnIdx) {
+  if (QZ.answered) return;
+  QZ.answered = true;
+  const allBtns = document.querySelectorAll('.quiz-option');
+  allBtns.forEach(b => b.classList.add('disabled'));
+  if (chosen === correct) {
+    document.getElementById('qopt-'+btnIdx).classList.add('correct');
+    QZ.correct++;
+    sm2(correct, 5);
+  } else {
+    document.getElementById('qopt-'+btnIdx).classList.add('wrong');
+    allBtns.forEach((b,i) => { if (WORDS.find(x=>x.zh===b.textContent)?.id===correct) b.classList.add('correct'); });
+    sm2(correct, 0);
+  }
+  document.getElementById('q-score-text').textContent = `正確：${QZ.correct}`;
+  setTimeout(() => { QZ.idx++; renderQuiz(); }, 1200);
+}
+
+function updateQPbar(cur, total) {
+  const pct = total ? Math.round(cur/total*100) : 0;
+  document.getElementById('q-pbar').style.width = pct+'%';
+  document.getElementById('q-prog-text').textContent = `${cur} / ${(total||'0')}`;
+}
+
+// ===================== PROGRESS =====================
+function renderProgress() {
+  const counts = { new:0, learning:0, mastered:0 };
+  const topicCounts = { daily:{total:0,mastered:0}, travel:{total:0,mastered:0}, work:{total:0,mastered:0}, academic:{total:0,mastered:0} };
+  WORDS.forEach(w => {
+    const s = STATE[w.id].status;
+    counts[s]++;
+    topicCounts[w.topic].total++;
+    if (s==='mastered') topicCounts[w.topic].mastered++;
+  });
+  const total = WORDS.length;
+  document.getElementById('st-total').textContent = total;
+  document.getElementById('st-learning').textContent = counts.learning;
+  document.getElementById('st-mastered').textContent = counts.mastered;
+  document.getElementById('st-streak').textContent = STATE._streak?.count || 0;
+
+  // Donut
+  const newPct = counts.new/total, learnPct = counts.learning/total, mastPct = counts.mastered/total;
+  const r=15.9, c=2*Math.PI*r;
+  const segs = [
+    {v:newPct*100, col:'#4a4a6a'},
+    {v:learnPct*100, col:'#F7971E'},
+    {v:mastPct*100, col:'#43E97B'},
+  ];
+  let offset = 25;
+  let paths = '';
+  segs.forEach(seg => {
+    if (seg.v > 0) {
+      const d = c * seg.v / 100;
+      paths += `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="${seg.col}" stroke-width="4" stroke-dasharray="${d} ${c-d}" stroke-dashoffset="-${(c*(100-offset)/100)}" transform="rotate(-90 21 21)"/>`;
+      offset += seg.v;
+    }
+  });
+  document.getElementById('donut-svg').innerHTML = `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="#2D2D50" stroke-width="4"/>${paths}<text x="21" y="25" text-anchor="middle" fill="#E8E8F0" font-size="6" font-weight="bold">${counts.mastered}/${total}</text>`;
+  document.getElementById('leg-new').textContent = `未學習 (${counts.new})`;
+  document.getElementById('leg-learning').textContent = `學習中 (${counts.learning})`;
+  document.getElementById('leg-mastered').textContent = `已熟悉 (${counts.mastered})`;
+
+  // Topic bars
+  const topicNames = {daily:'日常生活',travel:'旅遊',work:'職場',academic:'學術'};
+  const topicColors = {daily:'var(--accent)',travel:'#5BE0FF',work:'#C084FC',academic:'var(--warning)'};
+  document.getElementById('topic-bars').innerHTML = Object.entries(topicCounts).map(([t,tc]) => {
+    const pct = tc.total ? Math.round(tc.mastered/tc.total*100) : 0;
+    return `<div class="prog-row">
+      <div class="prog-row-header"><span>${topicNames[t]}</span><span style="color:${topicColors[t]}">${tc.mastered}/${tc.total} (${pct}%)</span></div>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${pct}%;background:${topicColors[t]}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Week bars
+  const week = STATE._streak?.week || {};
+  const days = [];
+  for (let i=6;i>=0;i--) {
+    const d = new Date(Date.now() - i*86400000);
+    days.push({ label:['日','一','二','三','四','五','六'][d.getDay()], val:week[getDateStr(d)]||0 });
+  }
+  const maxVal = Math.max(...days.map(d=>d.val), 1);
+  document.getElementById('week-bars').innerHTML = days.map(d => {
+    const h = Math.max(4, Math.round(d.val/maxVal*70));
+    return `<div class="week-bar-col"><div class="week-bar" style="height:${h}px" title="${d.val}個單字"></div><span class="week-day">${d.label}</span></div>`;
+  }).join('');
+}
+
+// ===================== VOCABULARY =====================
+let vocabFilter = 'all';
+function setVocabFilter(t) {
+  vocabFilter = t;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.topic===t));
+  renderVocab();
+}
+function renderVocab() {
+  const q = document.getElementById('vocab-search').value.toLowerCase();
+  const rows = WORDS.filter(w => {
+    if (vocabFilter !== 'all' && w.topic !== vocabFilter) return false;
+    if (q && !w.w.includes(q) && !w.zh.includes(q) && !w.ex.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const statusMap = { new:'<span class="status-dot status-new"></span>未學習', learning:'<span class="status-dot status-learning"></span>學習中', mastered:'<span class="status-dot status-mastered"></span>已熟悉' };
+  document.getElementById('vocab-tbody').innerHTML = rows.map(w => `
+    <tr>
+      <td><strong>${w.w}</strong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small></td>
+      <td style="color:var(--primary-light)">${w.ph}</td>
+      <td><span style="font-size:.75rem;background:var(--primary);color:#fff;padding:2px 6px;border-radius:8px">${w.pos}</span></td>
+      <td>${w.zh}</td>
+      <td style="white-space:nowrap">${statusMap[STATE[w.id].status]}</td>
+    </tr>
+  `).join('');
+}
+
+// ===================== INIT =====================
+initFlashcard();
+renderVocab();
+</script>
+</body>
+</html>
