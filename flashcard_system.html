@@ -58,7 +58,7 @@
   .card-pos { font-size:.78rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; margin-bottom:8px; display:inline-block; }
   .card-meaning { font-size:1.5rem; font-weight:600; margin-bottom:10px; }
   .card-example { font-size:.82rem; color:var(--text2); line-height:1.6; font-style:italic; }
-  .card-topic-badge { position:absolute; top:14px; right:14px; font-size:.w$em; padding:3px 8px; border-radius:10px; }
+  .card-topic-badge { position:absolute; top:14px; right:14px; font-size:.7rem; padding:3px 8px; border-radius:10px; }
   .badge-daily { background:#1a4a3a; color:var(--accent); }
   .badge-travel { background:#1a3a4a; color:#5BE0FF; }
   .badge-work { background:#3a1a4a; color:#C084FC; }
@@ -121,7 +121,7 @@
   .week-bars { display:flex; align-items:flex-end; gap:8px; height:80px; }
   .week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
   .week-bar { width:100%; border-radius:4px 4px 0 0; background:linear-gradient(to top,var(--primary),var(--primary-light)); min-height:4px; transition:height .4s; }
-  .week-day { font-size:.w$em; color:var(--text2); }
+  .week-day { font-size:.7rem; color:var(--text2); }
 
   /* === VOCABULARY === */
   .vocab-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
@@ -262,14 +262,14 @@ const WORDS = [
   {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
   {id:'convenient',w:'convenient',ph:'/kənˈviːniənt/',pos:'adj.',zh:'方便的',ex:'The supermarket is very convenient—it\'s just around the corner.',topic:'daily'},
   {id:'describe',w:'describe',ph:'/dɪˈskraɪb/',pos:'v.',zh:'描述；形容',ex:'Can you describe what the man looked like?',topic:'daily'},
-  {id:'difference',w:'difference',ph:'/ˈdɪfrəns/',pos:'n.',zh:'彮異；不同',ex:'What is the difference between these two products?',topic:'daily'},
+  {id:'difference',w:'difference',ph:'/ˈdɪfrəns/',pos:'n.',zh:'差異；不同',ex:'What is the difference between these two products?',topic:'daily'},
   {id:'experience',w:'experience',ph:'/ɪkˈspɪəriəns/',pos:'n.',zh:'經驗；體驗',ex:'Living abroad was a wonderful experience for her.',topic:'daily'},
   {id:'familiar',w:'familiar',ph:'/fəˈmɪliər/',pos:'adj.',zh:'熟悉的',ex:'This song sounds familiar—I\'ve heard it before.',topic:'daily'},
   {id:'fortunately',w:'fortunately',ph:'/ˈfɔːtʃənətli/',pos:'adv.',zh:'幸運地',ex:'Fortunately, no one was hurt in the accident.',topic:'daily'},
   {id:'generally',w:'generally',ph:'/ˈdʒenərəli/',pos:'adv.',zh:'通常；一般地',ex:'I generally wake up at seven in the morning.',topic:'daily'},
   {id:'hesitate',w:'hesitate',ph:'/ˈhezɪteɪt/',pos:'v.',zh:'猶豫；遲疑',ex:'Don\'t hesitate to ask if you need any help.',topic:'daily'},
   {id:'improve',w:'improve',ph:'/ɪmˈpruːv/',pos:'v.',zh:'改善；進步',ex:'She practices every day to improve her English.',topic:'daily'},
-  {id:'involve',w:'involve',ph:'/ɪnˈvɒlv/',pos:'v.',zh:'哈含；使參與',ex:'The project involves a lot of teamwork.',topic:'daily'},
+  {id:'involve',w:'involve',ph:'/ɪnˈvɒlv/',pos:'v.',zh:'包含；使參與',ex:'The project involves a lot of teamwork.',topic:'daily'},
   {id:'mention',w:'mention',ph:'/ˈmenʃən/',pos:'v.',zh:'提到；提及',ex:'Did he mention when he would be back?',topic:'daily'},
   // TRAVEL
   {id:'accommodation',w:'accommodation',ph:'/əˌkɒməˈdeɪʃən/',pos:'n.',zh:'住宿；膳宿',ex:'We booked accommodation near the beach.',topic:'travel'},
@@ -306,15 +306,15 @@ const WORDS = [
   {id:'anticipate',w:'anticipate',ph:'/ænˈtɪsɪpeɪt/',pos:'v.',zh:'預期；期待',ex:'We anticipate a rise in demand next quarter.',topic:'academic'},
   {id:'comprehensive',w:'comprehensive',ph:'/ˌkɒmprɪˈhensɪv/',pos:'adj.',zh:'全面的；廣泛的',ex:'The report provides a comprehensive overview.',topic:'academic'},
   {id:'conclude',w:'conclude',ph:'/kənˈkluːd/',pos:'v.',zh:'得出結論；結束',ex:'The study concludes that exercise reduces stress.',topic:'academic'},
-  {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreint/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
+  {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreɪt/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
   {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
   {id:'fundamental',w:'fundamental',ph:'/ˌfʌndəˈmentəl/',pos:'adj.',zh:'基本的；根本的',ex:'Respect is fundamental to any good relationship.',topic:'academic'},
-  {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɲθɪsɪs/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
+  {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɒθɪsɪs/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
   {id:'illustrate',w:'illustrate',ph:'/ˈɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
   {id:'investigate',w:'investigate',ph:'/ɪnˈvestɪɡeɪt/',pos:'v.',zh:'調查；研究',ex:'Researchers investigate the causes of the disease.',topic:'academic'},
   {id:'significant',w:'significant',ph:'/sɪɡˈnɪfɪkənt/',pos:'adj.',zh:'重要的；顯著的',ex:'There has been a significant improvement in results.',topic:'academic'},
   {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉變；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
-  {id:'variable',w:'variable',ph:'/ˈveəriəbl/',pos:'n.',zh:'袺���；可變因素',ex:'The experiment controlled for all variables.',topic:'academic'},
+  {id:'variable',w:'variable',ph:'/ˈveəriəbl/',pos:'n.',zh:'袺���；可论���素',ex:'The experiment controlled for all variables.',topic:'academic'},
 ];
 
 // ===================== STATE =====================
@@ -478,7 +478,7 @@ function startQuiz() {
 function renderQuiz() {
   const el = document.getElementById('quiz-main');
   if (QZ.deck.length === 0) {
-    el.innerHTML = '<p style="color:var(--text2);text-align:center;padding:40px;">請先選擇主題$��點擊「開始測驗」</p>';
+    el.innerHTML = '<p style="color:var(--text2);text-align:center;padding:40px;">請先選擇主題並點擊「開始測驗」</p>';
     updateQPbar(0, 0);
     return;
   }
