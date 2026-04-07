@@ -146,8 +146,31 @@
     .nav-tabs { overflow-x:auto; padding-bottom:2px; }
     .nav-tab { font-size:.8rem; padding:6px 10px; }
   }
+
+  /* AUTH */
+  .nav-auth { margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .auth-btn { background:none; border:1.5px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:.8rem; transition:.2s; white-space:nowrap; }
+  .auth-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .auth-avatar { width:28px; height:28px; border-radius:50%; }
+  .auth-name { font-size:.78rem; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sync-dot { width:8px; height:8px; border-radius:50%; background:var(--border); flex-shrink:0; }
+  .sync-dot.synced { background:var(--green); }
+  .sync-dot.syncing { background:var(--yellow); animation:sdpulse .8s ease-in-out infinite; }
+  .sync-dot.offline { background:var(--red); }
+  @keyframes sdpulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .auth-setup { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:24px; font-size:.88rem; line-height:1.7; }
+  .auth-setup h3 { margin-bottom:12px; color:var(--primary); }
+  .auth-setup code { background:var(--bg); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:.82rem; }
+  .auth-setup ol { padding-left:20px; }
+  .auth-setup li { margin-bottom:6px; }
 </style>
 </head>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <body>
 
 <nav>
@@ -157,6 +180,12 @@
     <button class="nav-tab" onclick="showSection('quiz')">✏️ 測驗</button>
     <button class="nav-tab" onclick="showSection('progress')">📊 進度</button>
     <button class="nav-tab" onclick="showSection('vocab')">📖 單字庫</button>
+  </div>
+  <div class="nav-auth">
+    <span class="sync-dot" id="sync-dot" title="同步狀態"></span>
+    <div id="auth-ui">
+      <button class="auth-btn" onclick="signInWithGoogle()">☁️ 登入同步</button>
+    </div>
   </div>
 </nav>
 
@@ -256,7 +285,7 @@
 // ===================== WORD DATA =====================
 const WORDS = [
   // DAILY
-  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals this year.',topic:'daily'},
+  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals&�his year.',topic:'daily'},
   {id:'appreciate',w:'appreciate',ph:'/əˈpriːʃieɪt/',pos:'v.',zh:'感謝；欣賞',ex:'I really appreciate your help with this project.',topic:'daily'},
   {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可用的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
   {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
@@ -279,7 +308,7 @@ const WORDS = [
   {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
   {id:'currency',w:'currency',ph:'/ˈkʌrənsi/',pos:'n.',zh:'貨幣；幣制',ex:'You should exchange currency before the trip.',topic:'travel'},
   {id:'destination',w:'destination',ph:'/ˌdestɪˈneɪʃən/',pos:'n.',zh:'目的地',ex:'Paris was our final destination.',topic:'travel'},
-  {id:'departure',w:'departure',ph:'/dɪˈpɑːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
+  {id:'departure',w:'departure',ph:'/dɪˈparːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
   {id:'explore',w:'explore',ph:'/ɪkˈsplɔːr/',pos:'v.',zh:'探索；探險',ex:'We spent the afternoon exploring the old town.',topic:'travel'},
   {id:'itinerary',w:'itinerary',ph:'/aɪˈtɪnərəri/',pos:'n.',zh:'旅行路線；行程表',ex:'The travel agent prepared a detailed itinerary.',topic:'travel'},
   {id:'navigate',w:'navigate',ph:'/ˈnævɪɡeɪt/',pos:'v.',zh:'導航；找路',ex:'It\'s easy to navigate the city with a map app.',topic:'travel'},
@@ -321,7 +350,22 @@ const WORDS = [
 function loadState() {
   try { return JSON.parse(localStorage.getItem('flState')) || {}; } catch(e) { return {}; }
 }
-function saveState() { localStorage.setItem('flState', JSON.stringify(STATE)); }
+
+let _fbSaveTimer = null;
+function saveState() {
+  localStorage.setItem('flState', JSON.stringify(STATE));
+  if (!window._fbUser || !window._fbDb) return;
+  setSyncDot('syncing');
+  clearTimeout(_fbSaveTimer);
+  _fbSaveTimer = setTimeout(async () => {
+    try {
+      await window._fbDb.collection('users').doc(window._fbUser.uid)
+        .collection('state').doc('flashcard')
+        .set({ state: STATE, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      setSyncDot('synced');
+    } catch(e) { setSyncDot('offline'); }
+  }, 1500);
+}
 
 let STATE = loadState();
 // Init missing words
@@ -568,7 +612,7 @@ function renderProgress() {
   document.getElementById('leg-mastered').textContent = `已熟悉 (${counts.mastered})`;
 
   // Topic bars
-  const topicNames = {daily:'日常生活',travel:'旅遊',work:'職場',academic:'學術'};
+  const topicNames = {daily:'日常生活',sravel:'旅遊',work:'職場',academic:'學術'};
   const topicColors = {daily:'var(--accent)',travel:'#5BE0FF',work:'#C084FC',academic:'var(--warning)'};
   document.getElementById('topic-bars').innerHTML = Object.entries(topicCounts).map(([t,tc]) => {
     const pct = tc.total ? Math.round(tc.mastered/tc.total*100) : 0;
@@ -621,6 +665,129 @@ function renderVocab() {
 // ===================== INIT =====================
 initFlashcard();
 renderVocab();
+
+// ===================== FIREBASE SYNC =====================
+// ⚠️ 請先到 https://console.firebase.google.com 建立專案，填入下方設定後才能啟用同步
+const FB_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+function setSyncDot(state) {
+  const dot = document.getElementById('sync-dot');
+  if (!dot) return;
+  const cls = { synced:'synced', syncing:'syncing', offline:'offline' };
+  dot.className = 'sync-dot' + (cls[state] ? ' ' + cls[state] : '');
+  dot.title = { idle:'未登入', syncing:'同步中…', synced:'已同步', offline:'離線' }[state] || '';
+}
+
+function updateAuthUI(user) {
+  const el = document.getElementById('auth-ui');
+  if (!el) return;
+  if (user) {
+    el.innerHTML = `
+      <span class="auth-name" title="${user.email}">${user.displayName || user.email}</span>
+      ${user.photoURL ? `<img class="auth-avatar" src="${user.photoURL}" alt="">` : ''}
+      <button class="auth-btn" onclick="fbSignOut()">登出</button>
+    `;
+  } else {
+    el.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">☁️ 登入同步</button>`;
+    setSyncDot('idle');
+  }
+}
+
+function mergeStates(local, remote) {
+  const merged = Object.assign({}, local);
+  Object.keys(remote).forEach(key => {
+    if (key === '_streak') {
+      const ls = local._streak || { count:0, week:{} };
+      const rs = remote._streak || { count:0, week:{} };
+      merged._streak = {
+        last: (ls.last||'') > (rs.last||'') ? ls.last : rs.last,
+        count: Math.max(ls.count||0, rs.count||0),
+        week: Object.assign({}, rs.week||{}, ls.week||{})
+      };
+    } else if (!merged[key]) {
+      merged[key] = remote[key];
+    } else {
+      const l = merged[key], r = remote[key];
+      if (r && typeof r === 'object' && 'reps' in r) {
+        merged[key] = (r.reps||0) > (l.reps||0) ? r : l;
+      }
+    }
+  });
+  return merged;
+}
+
+async function loadFromFirestore() {
+  if (!window._fbUser || !window._fbDb) return;
+  setSyncDot('syncing');
+  try {
+    const snap = await window._fbDb.collection('users').doc(window._fbUser.uid)
+      .collection('state').doc('flashcard').get();
+    if (snap.exists) {
+      const remote = snap.data().state || {};
+      STATE = mergeStates(STATE, remote);
+      WORDS.forEach(w => {
+        if (!STATE[w.id]) STATE[w.id] = { interval:1, ef:2.5, due:0, reps:0, status:'new' };
+      });
+      localStorage.setItem('flState', JSON.stringify(STATE));
+      initFlashcard();
+      renderVocab();
+    }
+    setSyncDot('synced');
+  } catch(e) { setSyncDot('offline'); console.warn('Firestore read:', e); }
+}
+
+function signInWithGoogle() {
+  if (!window._fbAuth) { alert('請先設定 Firebase 設定（見說明）'); return; }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  window._fbAuth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
+}
+
+function fbSignOut() {
+  if (window._fbAuth) window._fbAuth.signOut();
+}
+
+function initFirebase() {
+  if (FB_CONFIG.apiKey === 'YOUR_API_KEY') {
+    // Show setup instructions in progress section
+    const setupHtml = `<div class="auth-setup">
+      <h3>☁️ 啟用跨裝置同步</h3>
+      <p>請依下列步驟設定 Firebase，完成後同步功能即可使用：</p>
+      <ol>
+        <li>前往 <a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> 建立新專案</li>
+        <li>在「驗證」→「登入方式」啟用 <strong>Google</strong></li>
+        <li>在「Firestore Database」建立資料庫（以測試模式開始）</li>
+        <li>前往「專案設定」→「您的應用程式」新增網頁應用程式，複製 <code>firebaseConfig</code></li>
+        <li>在授權網域加入 <code>joshlin55688-debug.github.io</code></li>
+        <li>在本檔案 <code>&lt;script&gt;</code> 中找到 <code>FB_CONFIG</code>，將您的設定值貼入</li>
+        <li>儲存並重新部署，即可使用 Google 帳號登入同步進度</li>
+      </ol>
+    </div>`;
+    const progSec = document.getElementById('sec-progress');
+    if (progSec && !progSec.querySelector('.auth-setup')) {
+      progSec.insertAdjacentHTML('afterbegin', setupHtml);
+    }
+    return;
+  }
+  try {
+    const app = firebase.initializeApp(FB_CONFIG);
+    window._fbAuth = firebase.auth();
+    window._fbDb = firebase.firestore();
+    window._fbAuth.onAuthStateChanged(user => {
+      window._fbUser = user;
+      updateAuthUI(user);
+      if (user) loadFromFirestore();
+    });
+  } catch(e) { console.warn('Firebase init error:', e); }
+}
+
+initFirebase();
 </script>
 </body>
 </html>
