@@ -204,7 +204,7 @@
       </select>
       <select id="fc-mode" onchange="initFlashcard()">
         <option value="all">全部單字</option>
-        <option value="due">今日複習</option>
+        <option value="due" selected>今日複習</option>
         <option value="new">只看新字</option>
       </select>
       <button onclick="initFlashcard()">🔀 隨機</button>
@@ -289,7 +289,7 @@ const WORDS = [
   // DAILY
   {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals this year.',topic:'daily'},
   {id:'appreciate',w:'appreciate',ph:'/əˈpriːʃieɪt/',pos:'v.',zh:'感謝；欣賞',ex:'I really appreciate your help with this project.',topic:'daily'},
-  {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可用的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
+  {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可璨的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
   {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
   {id:'convenient',w:'convenient',ph:'/kənˈviːniənt/',pos:'adj.',zh:'方便的',ex:'The supermarket is very convenient—it\'s just around the corner.',topic:'daily'},
   {id:'describe',w:'describe',ph:'/dɪˈskraɪb/',pos:'v.',zh:'描述；形容',ex:'Can you describe what the man looked like?',topic:'daily'},
@@ -430,7 +430,7 @@ function showSection(id) {
 }
 
 // ===================== FLASHCARD =====================
-let FC = { deck:[], idx:0, flipped:false };
+let FC = { deck:[], idx:0, flipped:false, hardCards:[] };
 
 function getFilteredWords(topic, mode) {
   let ws = WORDS.filter(w => topic==='all' || w.topic===topic);
@@ -445,19 +445,45 @@ function initFlashcard() {
   const topic = document.getElementById('fc-topic').value;
   const mode = document.getElementById('fc-mode').value;
   FC.deck = shuffle(getFilteredWords(topic, mode));
-  FC.idx = 0; FC.flipped = false;
+  FC.idx = 0; FC.flipped = false; FC.hardCards = [];
+  renderFC();
+}
+
+function replayHard() {
+  FC.deck = shuffle([...FC.hardCards]);
+  FC.idx = 0; FC.flipped = false; FC.hardCards = [];
   renderFC();
 }
 
 function renderFC() {
   const el = document.getElementById('fc-main');
   if (FC.deck.length === 0) {
-    el.innerHTML = `<div class="fc-done"><div class="big-icon">🎉</div><h2>沒有符合條件的單字</h2><p>請更換篩選條件</p><button class="btn-primary" onclick="document.getElementById('fc-mode').value='all';initFlashcard()">顯示全部</button></div>`;
+    const mode = document.getElementById('fc-mode').value;
+    let msg = '請更換篩選條件';
+    let nextInfo = '';
+    if (mode === 'due') {
+      const allFuture = WORDS.map(w => STATE[w.id].due).filter(d => d > Date.now());
+      if (allFuture.length > 0) {
+        const nextMs = Math.min(...allFuture);
+        const h = ((nextMs - Date.now()) / 3600000);
+        nextInfo = h < 1 ? '⏰ 幾分鐘後有單字需要複習' : `⏰ 下次複習：約 ${Math.ceil(h)} 小時後`;
+        msg = '今天的複習已完成！';
+      } else {
+        msg = '還沒有學過任何單字，先用「全部單字」練習一遍吧';
+      }
+    }
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">🎉</div><h2>${msg}</h2><p style="color:var(--text2);margin-bottom:16px">${nextInfo}</p><button class="btn-primary" onclick="document.getElementById('fc-mode').value='all';initFlashcard()">練習全部單字</button></div>`;
     return;
   }
   if (FC.idx >= FC.deck.length) {
-    el.innerHTML = `<div class="fc-done"><div class="big-icon">🏆</div><h2>本輪完成！</h2><p>你已複習完 ${FC.deck.length} 個單字</p><button class="btn-primary" onclick="initFlashcard()">再來一輪</button></div>`;
     updatePbar(FC.deck.length, FC.deck.length);
+    const hardCount = FC.hardCards.length;
+    const allFuture = WORDS.map(w => STATE[w.id].due).filter(d => d > Date.now());
+    const nextMs = allFuture.length > 0 ? Math.min(...allFuture) : null;
+    const h = nextMs ? ((nextMs - Date.now()) / 3600000) : null;
+    const nextInfo = h !== null ? (h < 1 ? '⏰ 幾分鐘後有單字需要複習' : `⏰ 下次複習：約 ${Math.ceil(h)} 小時後`) : '';
+    const hardBtn = hardCount > 0 ? `<button class="btn-primary" style="margin-bottom:8px" onclick="replayHard()">🔄 再練不熟的字（${hardCount}個）</button><br>` : '';
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">🏆</div><h2>本輪完成！</h2><p style="margin-bottom:16px">已複習 ${FC.deck.length} 個單字</p>${hardBtn}<button class="btn-primary" style="background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="initFlashcard()">🔀 重新開始</button><p style="color:var(--text2);font-size:.82rem;margin-top:14px">${nextInfo}</p></div>`;
     return;
   }
   const w = FC.deck[FC.idx];
@@ -506,6 +532,7 @@ function flipCard() {
 }
 
 function rate(q) {
+  if (q === 0) FC.hardCards.push(FC.deck[FC.idx]);
   sm2(FC.deck[FC.idx].id, q);
   FC.idx++;
   renderFC();
