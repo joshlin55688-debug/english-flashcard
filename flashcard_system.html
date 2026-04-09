@@ -399,7 +399,7 @@ function sm2(id, q) { // q: 0=hard,3=ok,5=easy
     else if (s.reps === 1) s.interval = 6;
     else s.interval = Math.round(s.interval * s.ef);
     s.reps++;
-    s.ef = Math.-ax(1.3, s.ef + 0.1 - (5-q)*(0.08+(5-q)*0.02));
+    s.ef = Math.max(1.3, s.ef + 0.1 - (5-q)*(0.08+(5-q)*0.02));
   }
   s.due = Date.now() + s.interval * 86400000;
   s.status = s.reps >= 3 ? 'mastered' : 'learning';
