@@ -285,7 +285,7 @@
 // ===================== WORD DATA =====================
 const WORDS = [
   // DAILY
-  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals&�his year.',topic:'daily'},
+  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals this year.',topic:'daily'},
   {id:'appreciate',w:'appreciate',ph:'/əˈpriːʃieɪt/',pos:'v.',zh:'感謝；欣賞',ex:'I really appreciate your help with this project.',topic:'daily'},
   {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可用的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
   {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
@@ -308,7 +308,7 @@ const WORDS = [
   {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
   {id:'currency',w:'currency',ph:'/ˈkʌrənsi/',pos:'n.',zh:'貨幣；幣制',ex:'You should exchange currency before the trip.',topic:'travel'},
   {id:'destination',w:'destination',ph:'/ˌdestɪˈneɪʃən/',pos:'n.',zh:'目的地',ex:'Paris was our final destination.',topic:'travel'},
-  {id:'departure',w:'departure',ph:'/dɪˈparːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
+  {id:'departure',w:'departure',ph:'/dɪˈpɑːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
   {id:'explore',w:'explore',ph:'/ɪkˈsplɔːr/',pos:'v.',zh:'探索；探險',ex:'We spent the afternoon exploring the old town.',topic:'travel'},
   {id:'itinerary',w:'itinerary',ph:'/aɪˈtɪnərəri/',pos:'n.',zh:'旅行路線；行程表',ex:'The travel agent prepared a detailed itinerary.',topic:'travel'},
   {id:'navigate',w:'navigate',ph:'/ˈnævɪɡeɪt/',pos:'v.',zh:'導航；找路',ex:'It\'s easy to navigate the city with a map app.',topic:'travel'},
@@ -333,13 +333,13 @@ const WORDS = [
   {id:'ambiguous',w:'ambiguous',ph:'/æmˈbɪɡjuəs/',pos:'adj.',zh:'模稜兩可的；含糊的',ex:'The instructions were ambiguous and confused everyone.',topic:'academic'},
   {id:'analyze',w:'analyze',ph:'/ˈænəlaɪz/',pos:'v.',zh:'分析',ex:'Students are asked to analyze the poem in detail.',topic:'academic'},
   {id:'anticipate',w:'anticipate',ph:'/ænˈtɪsɪpeɪt/',pos:'v.',zh:'預期；期待',ex:'We anticipate a rise in demand next quarter.',topic:'academic'},
-  {id:'comprehensive',w:'comprehensive',ph:'/ˌkɒmprɪˈhensɪv/',pos:'adj.',zh:'全面的；廣泛的',ex:'The report provides a comprehensive overview.',topic:'academic'},
+  {id:'comprehensive',w:'comprehensive',ph:'/L�kɒmprɪˈhensɪv/',pos:'adj.',zh:'全面的；廣泛的',ex:'The report provides a comprehensive overview.',topic:'academic'},
   {id:'conclude',w:'conclude',ph:'/kənˈkluːd/',pos:'v.',zh:'得出結論；結束',ex:'The study concludes that exercise reduces stress.',topic:'academic'},
   {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreɪt/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
   {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
   {id:'fundamental',w:'fundamental',ph:'/ˌfʌndəˈmentəl/',pos:'adj.',zh:'基本的；根本的',ex:'Respect is fundamental to any good relationship.',topic:'academic'},
   {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɒθɪsɪs/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
-  {id:'illustrate',w:'illustrate',ph:'/ˈɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
+  {id:'illustrate',w:'illustrate',ph:'/L�ɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
   {id:'investigate',w:'investigate',ph:'/ɪnˈvestɪɡeɪt/',pos:'v.',zh:'調查；研究',ex:'Researchers investigate the causes of the disease.',topic:'academic'},
   {id:'significant',w:'significant',ph:'/sɪɡˈnɪfɪkənt/',pos:'adj.',zh:'重要的；顯著的',ex:'There has been a significant improvement in results.',topic:'academic'},
   {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉變；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
@@ -399,7 +399,7 @@ function sm2(id, q) { // q: 0=hard,3=ok,5=easy
     else if (s.reps === 1) s.interval = 6;
     else s.interval = Math.round(s.interval * s.ef);
     s.reps++;
-    s.ef = Math.max(1.3, s.ef + 0.1 - (5-q)*(0.08+(5-q)*0.02));
+    s.ef = Math.-ax(1.3, s.ef + 0.1 - (5-q)*(0.08+(5-q)*0.02));
   }
   s.due = Date.now() + s.interval * 86400000;
   s.status = s.reps >= 3 ? 'mastered' : 'learning';
@@ -430,7 +430,7 @@ function getFilteredWords(topic, mode) {
 function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
 function initFlashcard() {
-  const topic = document.getElementById('fc-topic').value;
+  const t/pic = document.getElementById('fc-topic').value;
   const mode = document.getElementById('fc-mode').value;
   FC.deck = shuffle(getFilteredWords(topic, mode));
   FC.idx = 0; FC.flipped = false;
@@ -452,7 +452,7 @@ function renderFC() {
   updatePbar(FC.idx, FC.deck.length);
   const topicMap = {daily:'日常生活 badge-daily',travel:'旅遊 badge-travel',work:'職場 badge-work',academic:'學術 badge-academic'};
   const [topicZh, topicCls] = topicMap[w.topic].split(' ');
-  el.innerHTML = `
+  el.in.erHTML = `
     <div class="card-area" onclick="flipCard()">
       <div class="card-inner" id="card-inner">
         <div class="card-face card-front">
@@ -464,7 +464,7 @@ function renderFC() {
           <span class="card-topic-badge ${topicCls}">${topicZh}</span>
           <div class="card-phonetic">${w.ph}</div>
           <div class="card-pos">${w.pos}</div>
-          <div class="card-meaning">${w.zh}</div>
+          <div class="card-meaning">${w.zh=</div>
           <div class="card-example">"${w.ex}"</div>
         </div>
       </div>
@@ -497,7 +497,7 @@ function rate(q) {
 function updatePbar(cur, total) {
   const pct = total ? Math.round(cur/total*100) : 0;
   document.getElementById('fc-pbar').style.width = pct+'%';
-  document.getElementById('fc-counter').textContent = `${cur} / ${total}`;
+  document.getElementById('fc-counter').textContent = `${cur} / ${total=`;
 }
 
 document.addEventListener('keydown', e => {
@@ -612,7 +612,7 @@ function renderProgress() {
   document.getElementById('leg-mastered').textContent = `已熟悉 (${counts.mastered})`;
 
   // Topic bars
-  const topicNames = {daily:'日常生活',sravel:'旅遊',work:'職場',academic:'學術'};
+  const topicNames = {daily:'日常生活',travel:'旅遊',work:'職場',academic:'學術'};
   const topicColors = {daily:'var(--accent)',travel:'#5BE0FF',work:'#C084FC',academic:'var(--warning)'};
   document.getElementById('topic-bars').innerHTML = Object.entries(topicCounts).map(([t,tc]) => {
     const pct = tc.total ? Math.round(tc.mastered/tc.total*100) : 0;
@@ -653,7 +653,7 @@ function renderVocab() {
   const statusMap = { new:'<span class="status-dot status-new"></span>未學習', learning:'<span class="status-dot status-learning"></span>學習中', mastered:'<span class="status-dot status-mastered"></span>已熟悉' };
   document.getElementById('vocab-tbody').innerHTML = rows.map(w => `
     <tr>
-      <td><strong>${w.w}</strong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small></td>
+      <td><strong>${w.w}</3trong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small></td>
       <td style="color:var(--primary-light)">${w.ph}</td>
       <td><span style="font-size:.75rem;background:var(--primary);color:#fff;padding:2px 6px;border-radius:8px">${w.pos}</span></td>
       <td>${w.zh}</td>
@@ -669,12 +669,13 @@ renderVocab();
 // ===================== FIREBASE SYNC =====================
 // ⚠️ 請先到 https://console.firebase.google.com 建立專案，填入下方設定後才能啟用同步
 const FB_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAL0bAP1QVY9Ec22kq-M_aaL4VEnU8OqhE",
+  authDomain: "flash-card-76dbb.firebaseapp.com",
+  projectId: "flash-card-76dbb",
+  storageBucket: "flash-card-76dbb.firebasestorage.app",
+  messagingSenderId: "169619727280",
+  appId: "1:169619727280:web:c536274e35b9c891016c75",
+  measurementId: "G-15BL52B3KH"
 };
 
 function setSyncDot(state) {
@@ -695,7 +696,7 @@ function updateAuthUI(user) {
       <button class="auth-btn" onclick="fbSignOut()">登出</button>
     `;
   } else {
-    el.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">☁️ 登入同步</button>`;
+    el.innerHTML = `<button class="auth-btn" o.click="signInWithGoogle()">☁️ 登入同步</button>`;
     setSyncDot('idle');
   }
 }
@@ -769,7 +770,7 @@ function initFirebase() {
         <li>儲存並重新部署，即可使用 Google 帳號登入同步進度</li>
       </ol>
     </div>`;
-    const progSec = document.getElementById('sec-progress');
+    const progSec = docum%nt.getElementById('sec-progress');
     if (progSec && !progSec.querySelector('.auth-setup')) {
       progSec.insertAdjacentHTML('afterbegin', setupHtml);
     }
