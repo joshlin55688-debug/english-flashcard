@@ -58,11 +58,13 @@
   .card-pos { font-size:.78rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; margin-bottom:8px; display:inline-block; }
   .card-meaning { font-size:1.5rem; font-weight:600; margin-bottom:10px; }
   .card-example { font-size:.82rem; color:var(--text2); line-height:1.6; font-style:italic; }
-  .card-topic-badge { position:absolute; top:14px; right:14px; font-size:.trem; padding:3px 8px; border-radius:10px; }
+  .card-topic-badge { position:absolute; top:14px; right:14px; font-size:.7rem; padding:3px 8px; border-radius:10px; }
   .badge-daily { background:#1a4a3a; color:var(--accent); }
   .badge-travel { background:#1a3a4a; color:#5BE0FF; }
   .badge-work { background:#3a1a4a; color:#C084FC; }
   .badge-academic { background:#4a3a1a; color:var(--warning); }
+  .speak-btn { position:absolute; bottom:12px; left:14px; background:rgba(108,99,255,.12); border:none; border-radius:8px; color:var(--primary-light); cursor:pointer; font-size:1.1rem; padding:6px 10px; transition:.2s; line-height:1; z-index:2; }
+  .speak-btn:hover { background:rgba(108,99,255,.28); transform:scale(1.12); }
 
   .rating-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
   .rating-btn { padding:12px 28px; border-radius:10px; border:none; cursor:pointer; font-size:.95rem; font-weight:600; transition:.2s; }
@@ -223,7 +225,7 @@
         <select id="q-topic" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
           <option value="all">全部</option>
           <option value="daily">日常</option>
-          <option value="travel">旅遊</option>
+          <option value="travel">旗遊</option>
           <option value="work">職場</option>
           <option value="academic">學術</option>
         </select>
@@ -268,7 +270,7 @@
       <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="renderVocab()">
       <button class="filter-btn active" data-topic="all" onclick="setVocabFilter('all')">全部</button>
       <button class="filter-btn" data-topic="daily" onclick="setVocabFilter('daily')">日常</button>
-      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旅遊</button>
+      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旗遊</button>
       <button class="filter-btn" data-topic="work" onclick="setVocabFilter('work')">職場</button>
       <button class="filter-btn" data-topic="academic" onclick="setVocabFilter('academic')">學術</button>
     </div>
@@ -285,7 +287,7 @@
 // ===================== WORD DATA =====================
 const WORDS = [
   // DAILY
-  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals&�his year.',topic:'daily'},
+  {id:'accomplish',w:'accomplish',ph:'/əˈkɒmplɪʃ/',pos:'v.',zh:'完成；實現',ex:'She managed to accomplish all her goals this year.',topic:'daily'},
   {id:'appreciate',w:'appreciate',ph:'/əˈpriːʃieɪt/',pos:'v.',zh:'感謝；欣賞',ex:'I really appreciate your help with this project.',topic:'daily'},
   {id:'available',w:'available',ph:'/əˈveɪləbl/',pos:'adj.',zh:'可用的；有空的',ex:'Are you available for a meeting tomorrow?',topic:'daily'},
   {id:'comfortable',w:'comfortable',ph:'/ˈkʌmftəbl/',pos:'adj.',zh:'舒適的',ex:'The new sofa is very comfortable to sit on.',topic:'daily'},
@@ -338,11 +340,11 @@ const WORDS = [
   {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreɪt/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
   {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
   {id:'fundamental',w:'fundamental',ph:'/ˌfʌndəˈmentəl/',pos:'adj.',zh:'基本的；根本的',ex:'Respect is fundamental to any good relationship.',topic:'academic'},
-  {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɒθɪsy�s/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
+  {id:'hypothesis',w:'hypothesis',ph:'/haɪˈpɒθɪsɪs/',pos:'n.',zh:'假設；假說',ex:'Scientists test a hypothesis through experiments.',topic:'academic'},
   {id:'illustrate',w:'illustrate',ph:'/ˈɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
   {id:'investigate',w:'investigate',ph:'/ɪnˈvestɪɡeɪt/',pos:'v.',zh:'調查；研究',ex:'Researchers investigate the causes of the disease.',topic:'academic'},
   {id:'significant',w:'significant',ph:'/sɪɡˈnɪfɪkənt/',pos:'adj.',zh:'重要的；顯著的',ex:'There has been a significant improvement in results.',topic:'academic'},
-  {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉變；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
+  {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉袺；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
   {id:'variable',w:'variable',ph:'/ˈveəriəbl/',pos:'n.',zh:'變數；可變因素',ex:'The experiment controlled for all variables.',topic:'academic'},
 ];
 
@@ -372,6 +374,16 @@ let STATE = loadState();
 WORDS.forEach(w => {
   if (!STATE[w.id]) STATE[w.id] = { interval:1, ef:2.5, due:0, reps:0, status:'new' };
 });
+
+// ===================== TTS =====================
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var utt = new SpeechSynthesisUtterance(text);
+  utt.lang = lang || 'en-US';
+  utt.rate = 0.85;
+  window.speechSynthesis.speak(utt);
+}
 
 // Streak
 function getDateStr(d) { return (d||new Date()).toISOString().slice(0,10); }
@@ -459,6 +471,7 @@ function renderFC() {
           <span class="card-topic-badge ${topicCls}">${topicZh}</span>
           <div class="card-word">${w.w}</div>
           <div class="card-hint">點擊卡片查看答案</div>
+          <button class="speak-btn" onclick="event.stopPropagation();speak('${w.w.replace(/'/g,"\\'")}','en-US')" title="朗讀英文">🔊</button>
         </div>
         <div class="card-face card-back">
           <span class="card-topic-badge ${topicCls}">${topicZh}</span>
@@ -466,6 +479,7 @@ function renderFC() {
           <div class="card-pos">${w.pos}</div>
           <div class="card-meaning">${w.zh}</div>
           <div class="card-example">"${w.ex}"</div>
+          <button class="speak-btn" onclick="event.stopPropagation();speak('${w.w.replace(/'/g,"\\'")}','en-US')" title="朗讀英文">🔊</button>
         </div>
       </div>
     </div>
@@ -477,6 +491,7 @@ function renderFC() {
     <div id="rating-hint" style="text-align:center;color:var(--text2);font-size:.8rem;margin-top:10px;">翻牌後評分 • 空白鍵翻牌 • 1/2/3 評分</div>
   `;
   FC.flipped = false;
+  setTimeout(function(){ speak(w.w, 'en-US'); }, 300);
 }
 
 function flipCard() {
@@ -485,6 +500,8 @@ function flipCard() {
   if (FC.flipped) {
     document.getElementById('rating-btns').style.display = 'flex';
     document.getElementById('rating-hint').style.display = 'none';
+    var w = FC.deck[FC.idx];
+    if (w) setTimeout(function(){ speak(w.zh, 'zh-TW'); }, 500);
   }
 }
 
