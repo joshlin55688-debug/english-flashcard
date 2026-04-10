@@ -325,7 +325,7 @@ const WORDS = [
   {id:'implement',w:'implement',ph:'/ˈɪmplɪment/',pos:'v.',zh:'實施；執行',ex:'The company will implement the new policy next month.',topic:'work'},
   {id:'negotiate',w:'negotiate',ph:'/nɪˈɡoʊʃieɪt/',pos:'v.',zh:'協商；談判',ex:'They negotiated a better deal with the supplier.',topic:'work'},
   {id:'opportunity',w:'opportunity',ph:'/ˌɒpəˈtjuːnɪti/',pos:'n.',zh:'機會',ex:'This is a great opportunity to expand your skills.',topic:'work'},
-  {id:'performance',w:'performance',ph:'/py��sive overview.',topic:'academic'},
+  {id:'performance',w:'performance',ph:'/pəˈfɔːməns/',pos:'n.',zh:'表現；績效',ex:'The manager reviewed the employee\'s performance.',topic:'work'},
   {id:'conclude',w:'conclude',ph:'/kənˈkluːd/',pos:'v.',zh:'得出結論；結束',ex:'The study concludes that exercise reduces stress.',topic:'academic'},
   {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreɪt/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
   {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
@@ -841,39 +841,6 @@ async function loadFromFirestore() {
 
 function signInWithGoogle() {
   if (!window._fbAuth) { alert('請先設定 Firebase 被定（見說明）'); return; }
-  const provider = new firebase.auth.GoogleAuthProvider();
-  window._fbAuth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
-}
-
-function fbSignOut() {
-  if (window._fbAuth) window._fbAuth.signOut();
-}
-
-function initFirebase() {
-  if (FB_CONFIG.apiKey === 'YOUR_API_KEY') {
-    // Show setup instructions in progress section
-    const setupHtml = `<div class="auth-setup">
-      <h3>☁️ 啟用跨裝置同步</h3>
-      <p>請依下列步驟設定 Firebase，完成後同步功能即可使用：</p>
-      <ol>
-        <li>前往 <a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> 建立新專案</li>
-        <li>在「驗證」→「登入方式」啟用 <strong>Google</strong></li>
-        <li>在「Firestore Database」建立資料庫（以測試模式開始）</li>
-        <li>前往「專案設定」→「您的應�emote = snap.data().state || {};
-      STATE = mergeStates(STATE, remote);
-      WORDS.forEach(w => {
-        if (!STATE[w.id]) STATE[w.id] = { stability:0, difficulty:5.0, due:0, reps:0, lapses:0, status:'new', lastReview:0 };
-      });
-      localStorage.setItem('flState', JSON.stringify(STATE));
-      initFlashcard();
-      renderVocab();
-    }
-    setSyncDot('synced');
-  } catch(e) { setSyncDot('offline'); console.warn('Firestore read:', e); }
-}
-
-function signInWithGoogle() {
-  if (!window._fbAuth) { alert('請先設定 Firebase 設定（見說明）'); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
   window._fbAuth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
 }
