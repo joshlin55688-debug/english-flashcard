@@ -225,11 +225,11 @@
         <select id="q-topic" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
           <option value="all">全部</option>
           <option value="daily">日常</option>
-          <option value="travel">旗遊</option>
+          <option value="travel">旅遊</option>
           <option value="work">職場</option>
           <option value="academic">學術</option>
         </select>
-        <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">墛始測驗</button>
+        <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">開始測驗</button>
       </div>
     </div>
     <div id="quiz-main"></div>
@@ -270,7 +270,7 @@
       <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="renderVocab()">
       <button class="filter-btn active" data-topic="all" onclick="setVocabFilter('all')">全部</button>
       <button class="filter-btn" data-topic="daily" onclick="setVocabFilter('daily')">日常</button>
-      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旗遊</button>
+      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旕遊</button>
       <button class="filter-btn" data-topic="work" onclick="setVocabFilter('work')">職場</button>
       <button class="filter-btn" data-topic="academic" onclick="setVocabFilter('academic')">學術</button>
     </div>
@@ -308,6 +308,10 @@ const WORDS = [
   {id:'attraction',w:'attraction',ph:'/əˈtrækʃən/',pos:'n.',zh:'景點；吸引力',ex:'The Eiffel Tower is the city\'s top attraction.',topic:'travel'},
   {id:'cancel',w:'cancel',ph:'/ˈkænsəl/',pos:'v.',zh:'取消',ex:'We had to cancel our flight due to bad weather.',topic:'travel'},
   {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
+entʃər/',pos:'n.',zh:'冒險；探險',ex:'Backpacking through Asia was a real adventure.',topic:'travel'},
+  {id:'attraction',w:'attraction',ph:'/əˈtrækʃən/',pos:'n.',zh:'景點；吸引力',ex:'The Eiffel Tower is the city\'s top attraction.',topic:'travel'},
+  {id:'cancel',w:'cancel',ph:'/ˈkænsəl/',pos:'v.',zh:'取消',ex:'We had to cancel our flight due to bad weather.',topic:'travel'},
+  {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
   {id:'currency',w:'currency',ph:'/ˈkʌrənsi/',pos:'n.',zh:'貨幣；幣制',ex:'You should exchange currency before the trip.',topic:'travel'},
   {id:'destination',w:'destination',ph:'/ˌdestɪˈneɪʃən/',pos:'n.',zh:'目的地',ex:'Paris was our final destination.',topic:'travel'},
   {id:'departure',w:'departure',ph:'/dɪˈpɑːtʃər/',pos:'n.',zh:'出發；起飛',ex:'The departure time is 9 AM at Gate 12.',topic:'travel'},
@@ -325,7 +329,17 @@ const WORDS = [
   {id:'implement',w:'implement',ph:'/ˈɪmplɪment/',pos:'v.',zh:'實施；執行',ex:'The company will implement the new policy next month.',topic:'work'},
   {id:'negotiate',w:'negotiate',ph:'/nɪˈɡoʊʃieɪt/',pos:'v.',zh:'協商；談判',ex:'They negotiated a better deal with the supplier.',topic:'work'},
   {id:'opportunity',w:'opportunity',ph:'/ˌɒpəˈtjuːnɪti/',pos:'n.',zh:'機會',ex:'This is a great opportunity to expand your skills.',topic:'work'},
-  {id:'performance',w:'performance',ph:'/pəˈfɔːməns/',pos:'n.',zh:'表現；績效',ex:'The manager reviewed the employee\'s performance.',topic:'work'},
+  {id:'performance',w:'performance',ph:'/pəˈfɔːməns/',pos:'n.',zh:'表現；績效',ex:'Her performance this quarter was outstanding.',topic:'work'},
+  {id:'prioritize',w:'prioritize',ph:'/praɪˈɒrɪtaɪz/',pos:'v.',zh:'優先處理',ex:'Learn to prioritize tasks to manage your time well.',topic:'work'},
+  {id:'proposal',w:'proposal',ph:'/prəˈpoʊzəl/',pos:'n.',zh:'提案；建議書',ex:'The team submitted a proposal for the new project.',topic:'work'},
+  {id:'reliable',w:'reliable',ph:'/rɪˈlaɪəbl/',pos:'adj.',zh:'可靠的；可信賴的',ex:'We need a reliable partner for this project.',topic:'work'},
+  {id:'strategy',w:'strategy',ph:'/ˈstrætədʒi/',pos:'n.',zh:'策略；戰略',ex:'They developed a new marketing strategy.',topic:'work'},
+  {id:'supervise',w:'supervise',ph:'/ˈsuːpəvaɪz/',pos:'v.',zh:'監督；指導',ex:'She supervises a team of ten engineers.',topic:'work'},
+  // ACADEMIC
+  {id:'ambiguous',w:'ambiguous',ph:'/æmˈbɪɡjuəs/',pos:'adj.',zh:'模稜兩可的；含糊的',ex:'The instructions were ambiguous and confused everyone.',topic:'academic'},
+  {id:'analyze',w:'analyze',ph:'/ˈænəlaɪz/',pos:'v.',zh:'分析',ex:'Students are asked to analyze the poem in detail.',topic:'academic'},
+  {id:'anticipate',w:'anticipate',ph:'/ænˈtɪsɪpeɪt/',pos:'v.',zh:'預期；期待',ex:'We anticipate a rise in demand next quarter.',topic:'academic'},
+  {id:'comprehensive',w:'comprehensive',ph:'/ˌkɒmprɪˈhensɪv/',pos:'adj.',zh:'全面的；廣泛的',ex:'The report provides a comprehensive overview.',topic:'academic'},
   {id:'conclude',w:'conclude',ph:'/kənˈkluːd/',pos:'v.',zh:'得出結論；結束',ex:'The study concludes that exercise reduces stress.',topic:'academic'},
   {id:'demonstrate',w:'demonstrate',ph:'/ˈdemənstreɪt/',pos:'v.',zh:'示範；證明',ex:'The experiment demonstrates Newton\'s third law.',topic:'academic'},
   {id:'evaluate',w:'evaluate',ph:'/ɪˈvæljueɪt/',pos:'v.',zh:'評估；評價',ex:'Teachers evaluate students based on their work.',topic:'academic'},
@@ -334,7 +348,7 @@ const WORDS = [
   {id:'illustrate',w:'illustrate',ph:'/ˈɪləstreɪt/',pos:'v.',zh:'說明；舉例',ex:'These charts illustrate the growth in sales.',topic:'academic'},
   {id:'investigate',w:'investigate',ph:'/ɪnˈvestɪɡeɪt/',pos:'v.',zh:'調查；研究',ex:'Researchers investigate the causes of the disease.',topic:'academic'},
   {id:'significant',w:'significant',ph:'/sɪɡˈnɪfɪkənt/',pos:'adj.',zh:'重要的；顯著的',ex:'There has been a significant improvement in results.',topic:'academic'},
-  {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉變；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
+  {id:'transform',w:'transform',ph:'/trænsˈfɔːm/',pos:'v.',zh:'轉袺；改造',ex:'Education can transform people\'s lives.',topic:'academic'},
   {id:'variable',w:'variable',ph:'/ˈveəriəbl/',pos:'n.',zh:'變數；可變因素',ex:'The experiment controlled for all variables.',topic:'academic'},
 ];
 
@@ -840,7 +854,7 @@ async function loadFromFirestore() {
 }
 
 function signInWithGoogle() {
-  if (!window._fbAuth) { alert('請先設定 Firebase 被定（見說明）'); return; }
+  if (!window._fbAuth) { alert('請先設定 Firebase 設定（見說明）'); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
   window._fbAuth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
 }
