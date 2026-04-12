@@ -225,11 +225,11 @@
         <select id="q-topic" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
           <option value="all">全部</option>
           <option value="daily">日常</option>
-          <option value="travel">旅遊</option>
+          <option value="travel">旕遊</option>
           <option value="work">職場</option>
           <option value="academic">學術</option>
         </select>
-        <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">開始測驗</button>
+        <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">覉e��</button>
       </div>
     </div>
     <div id="quiz-main"></div>
@@ -241,7 +241,7 @@
       <div class="stat-card c1"><div class="stat-num" id="st-total">0</div><div class="stat-label">總單字數</div></div>
       <div class="stat-card c2"><div class="stat-num" id="st-learning">0</div><div class="stat-label">學習中</div></div>
       <div class="stat-card c3"><div class="stat-num" id="st-mastered">0</div><div class="stat-label">已熟悉</div></div>
-      <div class="stat-card c4"><div class="stat-num" id="st-streak">0</div><div class="stat-label">連續天數 🔥</div></div>
+      <div class="stat-card c4"><div class="stat-num" id="st-streak">0</div><div class="stat-label">連續天數 🔥</div></div></div>
     </div>
     <div class="progress-section">
       <h3>📈 熟悉度分佈</h3>
@@ -270,7 +270,7 @@
       <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="renderVocab()">
       <button class="filter-btn active" data-topic="all" onclick="setVocabFilter('all')">全部</button>
       <button class="filter-btn" data-topic="daily" onclick="setVocabFilter('daily')">日常</button>
-      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旕遊</button>
+      <button class="filter-btn" data-topic="travel" onclick="setVocabFilter('travel')">旅遊</button>
       <button class="filter-btn" data-topic="work" onclick="setVocabFilter('work')">職場</button>
       <button class="filter-btn" data-topic="academic" onclick="setVocabFilter('academic')">學術</button>
     </div>
@@ -305,10 +305,6 @@ const WORDS = [
   // TRAVEL
   {id:'accommodation',w:'accommodation',ph:'/əˌkɒməˈdeɪʃən/',pos:'n.',zh:'住宿；膳宿',ex:'We booked accommodation near the beach.',topic:'travel'},
   {id:'adventure',w:'adventure',ph:'/ədˈventʃər/',pos:'n.',zh:'冒險；探險',ex:'Backpacking through Asia was a real adventure.',topic:'travel'},
-  {id:'attraction',w:'attraction',ph:'/əˈtrækʃən/',pos:'n.',zh:'景點；吸引力',ex:'The Eiffel Tower is the city\'s top attraction.',topic:'travel'},
-  {id:'cancel',w:'cancel',ph:'/ˈkænsəl/',pos:'v.',zh:'取消',ex:'We had to cancel our flight due to bad weather.',topic:'travel'},
-  {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
-entʃər/',pos:'n.',zh:'冒險；探險',ex:'Backpacking through Asia was a real adventure.',topic:'travel'},
   {id:'attraction',w:'attraction',ph:'/əˈtrækʃən/',pos:'n.',zh:'景點；吸引力',ex:'The Eiffel Tower is the city\'s top attraction.',topic:'travel'},
   {id:'cancel',w:'cancel',ph:'/ˈkænsəl/',pos:'v.',zh:'取消',ex:'We had to cancel our flight due to bad weather.',topic:'travel'},
   {id:'confirm',w:'confirm',ph:'/kənˈfɜːm/',pos:'v.',zh:'確認',ex:'Please confirm your reservation by email.',topic:'travel'},
@@ -537,7 +533,7 @@ function renderFC() {
         msg = '還沒有學過任何單字，先用「全部單字」練習一遍吧';
       }
     }
-    el.innerHTML = `<div class="fc-done"><div class="big-icon">🎉</div><h2>${msg}</h2><p style="color:var(--text2);margin-bottom:16px">${nextInfo}</p><button class="btn-primary" onclick="document.getElementById('fc-mode').value='all';initFlashcard()">練習全部單字</button></div>`;
+    el.innerHTML = `div class="fc-done"><div class="big-icon">🎉</div><h2>${msg}</h2><p style="color:var(--text2);margin-bottom:16px">${nextInfo}</p><button class="btn-primary" onclick="document.getElementById('fc-mode').value='all';initFlashcard()">練習全部單字</button></div>`;
     return;
   }
   if (FC.idx >= FC.deck.length) {
