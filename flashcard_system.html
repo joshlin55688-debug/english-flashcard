@@ -207,9 +207,17 @@
         <option value="level6">Level 6 精通</option>
       </select>
       <select id="fc-mode" onchange="initFlashcard()">
-        <option value="all">全部單字</option>
-        <option value="due" selected>今日複習</option>
+        <option value="smart" selected>智慧模式</option>
+        <option value="due">今日複習</option>
         <option value="new">只看新字</option>
+        <option value="all">全部單字</option>
+      </select>
+      <select id="fc-new-limit" onchange="initFlashcard()">
+        <option value="10">新字 10</option>
+        <option value="20" selected>新字 20</option>
+        <option value="30">新字 30</option>
+        <option value="50">新字 50</option>
+        <option value="0">新字 無限</option>
       </select>
       <button onclick="initFlashcard()">🔀 隨機</button>
       <div class="fc-progress-bar-wrap"><div class="fc-progress-bar" id="fc-pbar" style="width:0%"></div></div>
@@ -6425,10 +6433,23 @@ function showSection(id) {
 let FC = { deck:[], idx:0, flipped:false, hardCards:[] };
 
 function getFilteredWords(topic, mode) {
-  let ws = WORDS.filter(w => topic==='all' || w.topic===topic);
-  if (mode==='due') ws = ws.filter(w => STATE[w.id].due <= Date.now());
-  if (mode==='new') ws = ws.filter(w => STATE[w.id].status==='new');
-  return ws;
+  const newLimit = parseInt(document.getElementById('fc-new-limit').value);
+  let pool = WORDS.filter(w => topic==='all' || w.topic===topic);
+
+  if (mode === 'smart') {
+    // Due cards (learning/review) always shown first
+    const due = pool.filter(w => STATE[w.id].status !== 'new' && STATE[w.id].due <= Date.now());
+    // New cards: take from front (sequential within level) up to limit
+    const newCards = pool.filter(w => STATE[w.id].status === 'new');
+    const limitedNew = newLimit === 0 ? newCards : newCards.slice(0, newLimit);
+    return [...shuffle(due), ...limitedNew];
+  }
+  if (mode === 'due') return pool.filter(w => STATE[w.id].due <= Date.now());
+  if (mode === 'new') {
+    const newCards = pool.filter(w => STATE[w.id].status === 'new');
+    return newLimit === 0 ? newCards : newCards.slice(0, newLimit);
+  }
+  return pool; // all
 }
 
 function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -6436,7 +6457,9 @@ function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.rand
 function initFlashcard() {
   const topic = document.getElementById('fc-topic').value;
   const mode = document.getElementById('fc-mode').value;
-  FC.deck = shuffle(getFilteredWords(topic, mode));
+  const words = getFilteredWords(topic, mode);
+  // smart mode already orders (due shuffled + new sequential); others get full shuffle
+  FC.deck = mode === 'smart' ? words : shuffle(words);
   FC.idx = 0; FC.flipped = false; FC.hardCards = [];
   renderFC();
 }
