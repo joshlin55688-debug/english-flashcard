@@ -223,6 +223,7 @@
       <div class="fc-progress-bar-wrap"><div class="fc-progress-bar" id="fc-pbar" style="width:0%"></div></div>
       <span class="fc-counter" id="fc-counter">0 / 0</span>
     </div>
+    <div id="fc-due-info" style="font-size:.8rem;color:var(--text2);margin:-8px 0 16px;"></div>
     <div id="fc-main"></div>
   </div>
 
@@ -281,7 +282,8 @@
   <!-- VOCAB -->
   <div id="sec-vocab" class="section">
     <div class="vocab-toolbar">
-      <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="renderVocab()">
+      <input class="vocab-search" id="vocab-search" placeholder="搜尋單字…" oninput="debounceVocab()">
+      <span id="vocab-count" style="align-self:center;font-size:.8rem;color:var(--text2);white-space:nowrap;"></span>
       <button class="filter-btn active" data-topic="all" onclick="setVocabFilter('all')">全部</button>
       <button class="filter-btn" data-topic="level1" onclick="setVocabFilter('level1')">L1 基礎</button>
       <button class="filter-btn" data-topic="level2" onclick="setVocabFilter('level2')">L2 初階</button>
@@ -6315,12 +6317,29 @@ WORDS.forEach(w => {
 });
 
 // ===================== TTS =====================
+// Prefer natural/online voices (Edge "Natural", Chrome "Google") over robotic defaults
+let _voices = {};
+function pickVoices() {
+  const all = speechSynthesis.getVoices();
+  const pick = pre => {
+    const vs = all.filter(v => v.lang.replace('_','-').startsWith(pre));
+    return vs.find(v=>/natural|online/i.test(v.name)) || vs.find(v=>/google/i.test(v.name)) || vs[0] || null;
+  };
+  _voices.en = pick('en-US') || pick('en');
+  _voices.zh = pick('zh-TW') || pick('zh');
+}
+if (window.speechSynthesis) {
+  pickVoices();
+  speechSynthesis.onvoiceschanged = pickVoices;
+}
 function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   var utt = new SpeechSynthesisUtterance(text);
   utt.lang = lang || 'en-US';
   utt.rate = 0.85;
+  var v = _voices[(lang||'en').slice(0,2)];
+  if (v) utt.voice = v;
   window.speechSynthesis.speak(utt);
 }
 
@@ -6454,6 +6473,20 @@ function getFilteredWords(topic, mode) {
 
 function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
+function updateDueInfo() {
+  const el = document.getElementById('fc-due-info');
+  if (!el) return;
+  const now = Date.now();
+  let due = 0, newCount = 0;
+  WORDS.forEach(w => {
+    const s = STATE[w.id];
+    if (s.status === 'new') newCount++;
+    else if (s.due <= now) due++;
+  });
+  const doneToday = (STATE._streak && STATE._streak.week && STATE._streak.week[getDateStr()]) || 0;
+  el.textContent = `📌 待複習 ${due} ・ 未學習 ${newCount} ・ 今日已複習 ${doneToday}`;
+}
+
 function initFlashcard() {
   const topic = document.getElementById('fc-topic').value;
   const mode = document.getElementById('fc-mode').value;
@@ -6471,6 +6504,7 @@ function replayHard() {
 }
 
 function renderFC() {
+  updateDueInfo();
   const el = document.getElementById('fc-main');
   if (FC.deck.length === 0) {
     const mode = document.getElementById('fc-mode').value;
@@ -6503,8 +6537,8 @@ function renderFC() {
   }
   const w = FC.deck[FC.idx];
   updatePbar(FC.idx, FC.deck.length);
-  const topicMap = {level1:'Level 1 badge-level1',level2:'Level 2 badge-level2',level3:'Level 3 badge-level3',level4:'Level 4 badge-level4',level5:'Level 5 badge-level5',level6:'Level 6 badge-level6'};
-  const [topicZh, topicCls] = topicMap[w.topic].split(' ');
+  const topicMap = {level1:['Level 1','badge-level1'],level2:['Level 2','badge-level2'],level3:['Level 3','badge-level3'],level4:['Level 4','badge-level4'],level5:['Level 5','badge-level5'],level6:['Level 6','badge-level6']};
+  const [topicZh, topicCls] = topicMap[w.topic];
   el.innerHTML = `
     <div class="card-area" onclick="flipCard()">
       <div class="card-inner" id="card-inner">
@@ -6547,8 +6581,14 @@ function flipCard() {
 }
 
 function rate(q) {
-  if (q === 0) FC.hardCards.push(FC.deck[FC.idx]);
-  fsrs(FC.deck[FC.idx].id, q);
+  const w = FC.deck[FC.idx];
+  if (q === 0) {
+    if (!FC.hardCards.includes(w)) FC.hardCards.push(w);
+    // 不熟的字 5 張後再出現一次，當場強化記憶
+    const pos = Math.min(FC.idx + 6, FC.deck.length);
+    FC.deck.splice(pos, 0, w);
+  }
+  fsrs(w.id, q);
   FC.idx++;
   renderFC();
 }
@@ -6561,11 +6601,16 @@ function updatePbar(cur, total) {
 
 document.addEventListener('keydown', e => {
   const sec = document.querySelector('.section.active');
-  if (!sec || sec.id !== 'sec-flashcard') return;
-  if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); if (!FC.flipped) flipCard(); }
-  if (e.key === '1') { if (FC.flipped) rate(0); }
-  if (e.key === '2') { if (FC.flipped) rate(3); }
-  if (e.key === '3') { if (FC.flipped) rate(5); }
+  if (!sec) return;
+  if (sec.id === 'sec-flashcard') {
+    if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); if (!FC.flipped) flipCard(); }
+    if (e.key === '1') { if (FC.flipped) rate(0); }
+    if (e.key === '2') { if (FC.flipped) rate(3); }
+    if (e.key === '3') { if (FC.flipped) rate(5); }
+  } else if (sec.id === 'sec-quiz' && !QZ.answered && QZ.deck.length) {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) { const b = document.getElementById('qopt-' + (n - 1)); if (b) b.click(); }
+  }
 });
 
 // ===================== QUIZ =====================
@@ -6593,7 +6638,10 @@ function renderQuiz() {
     return;
   }
   const w = QZ.deck[QZ.idx];
-  const wrong = shuffle(WORDS.filter(x=>x.id!==w.id)).slice(0,3);
+  // 干擾選項優先抽同 Level、排除同義字，提高鑑別度
+  let pool = WORDS.filter(x => x.id !== w.id && x.zh !== w.zh && x.topic === w.topic);
+  if (pool.length < 3) pool = WORDS.filter(x => x.id !== w.id && x.zh !== w.zh);
+  const wrong = shuffle(pool).slice(0,3);
   const options = shuffle([w, ...wrong]);
   updateQPbar(QZ.idx, QZ.deck.length);
   el.innerHTML = `
@@ -6601,8 +6649,9 @@ function renderQuiz() {
       <div class="quiz-question">${w.w}</div>
       <div class="quiz-phonetic">${w.ph} &nbsp; ${w.pos}</div>
       <div class="quiz-options">
-        ${options.map((o,i) => `<button class="quiz-option" id="qopt-${i}" onclick="answerQuiz('${o.id}','${w.id}',${i})">${o.zh}</button>`).join('')}
+        ${options.map((o,i) => `<button class="quiz-option" id="qopt-${i}" data-id="${o.id}" onclick="answerQuiz('${o.id}','${w.id}',${i})">${o.zh}</button>`).join('')}
       </div>
+      <div style="text-align:center;color:var(--text2);font-size:.75rem;margin-top:14px;">按 1～4 鍵快速作答</div>
     </div>
   `;
   QZ.answered = false;
@@ -6619,11 +6668,13 @@ function answerQuiz(chosen, correct, btnIdx) {
     fsrs(correct, 5);
   } else {
     document.getElementById('qopt-'+btnIdx).classList.add('wrong');
-    allBtns.forEach((b,i) => { if (WORDS.find(x=>x.zh===b.textContent)?.id===correct) b.classList.add('correct'); });
+    const correctBtn = document.querySelector('.quiz-option[data-id="'+correct+'"]');
+    if (correctBtn) correctBtn.classList.add('correct');
     fsrs(correct, 0);
   }
   document.getElementById('q-score-text').textContent = `正確：${QZ.correct}`;
-  setTimeout(() => { QZ.idx++; renderQuiz(); }, 1200);
+  // 答錯時多停留一下，讓使用者看清楚正確答案
+  setTimeout(() => { QZ.idx++; renderQuiz(); }, chosen === correct ? 900 : 1800);
 }
 
 function updateQPbar(cur, total) {
@@ -6697,20 +6748,33 @@ function renderProgress() {
 
 // ===================== VOCABULARY =====================
 let vocabFilter = 'all';
+let vocabLimit = 200;   // 分批渲染：一次最多 200 列，避免 6000 列拖垮頁面
+let _vsTimer = null;
+function debounceVocab() {
+  clearTimeout(_vsTimer);
+  _vsTimer = setTimeout(() => { vocabLimit = 200; renderVocab(); }, 200);
+}
 function setVocabFilter(t) {
   vocabFilter = t;
+  vocabLimit = 200;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.topic===t));
   renderVocab();
 }
+function vocabShowMore() { vocabLimit += 400; renderVocab(); }
 function renderVocab() {
-  const q = document.getElementById('vocab-search').value.toLowerCase();
+  const q = document.getElementById('vocab-search').value.toLowerCase().trim();
   const rows = WORDS.filter(w => {
     if (vocabFilter !== 'all' && w.topic !== vocabFilter) return false;
-    if (q && !w.w.includes(q) && !w.zh.includes(q) && !w.ex.toLowerCase().includes(q)) return false;
+    if (q && !w.w.toLowerCase().includes(q) && !w.zh.includes(q) && !w.ex.toLowerCase().includes(q)) return false;
     return true;
   });
+  document.getElementById('vocab-count').textContent = `共 ${rows.length} 字`;
+  const shown = rows.slice(0, vocabLimit);
   const statusMap = { new:'<span class="status-dot status-new"></span>未學習', learning:'<span class="status-dot status-learning"></span>學習中', mastered:'<span class="status-dot status-mastered"></span>已熟悉' };
-  document.getElementById('vocab-tbody').innerHTML = rows.map(w => `
+  const moreRow = rows.length > vocabLimit
+    ? `<tr><td colspan="5" style="text-align:center;padding:16px"><button class="btn-primary" style="font-size:.85rem;padding:8px 20px" onclick="vocabShowMore()">顯示更多（還有 ${rows.length - vocabLimit} 字）</button></td></tr>`
+    : '';
+  document.getElementById('vocab-tbody').innerHTML = shown.map(w => `
     <tr>
       <td><strong>${w.w}</strong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small></td>
       <td style="color:var(--primary-light)">${w.ph}</td>
@@ -6718,7 +6782,7 @@ function renderVocab() {
       <td>${w.zh}</td>
       <td style="white-space:nowrap">${statusMap[STATE[w.id].status]}</td>
     </tr>
-  `).join('');
+  `).join('') + moreRow;
 }
 
 // ===================== INIT =====================
