@@ -147,8 +147,11 @@
   @media(max-width:600px) {
     .quiz-options { grid-template-columns:1fr; }
     .card-word { font-size:1.8rem; }
-    .nav-tabs { overflow-x:auto; padding-bottom:2px; }
-    .nav-tab { font-size:.8rem; padding:6px 10px; }
+    /* 手機版導覽列換成兩行：上排 LOGO+登入，下排分頁佔滿寬度 */
+    nav { flex-wrap:wrap; height:auto; padding:8px 12px 10px; }
+    .nav-logo { margin-right:auto; font-size:1.05rem; }
+    .nav-tabs { order:3; width:100%; margin-top:8px; }
+    .nav-tab { flex:1; font-size:.82rem; padding:8px 2px; text-align:center; }
   }
 
   /* AUTH */
