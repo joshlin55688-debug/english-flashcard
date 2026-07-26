@@ -2,8 +2,17 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>英文閃卡學習系統</title>
+<!-- PWA 手機 App 模式 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#6C63FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FlashLearn">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root {
     --primary: #6C63FF;
@@ -98,6 +107,19 @@
   .quiz-option.correct { border-color:var(--green); background:#0d2a1a; color:var(--green); }
   .quiz-option.wrong { border-color:var(--red); background:#2a0d0d; color:var(--red); }
   .quiz-option.disabled { cursor:default; }
+  .quiz-reveal { background:linear-gradient(135deg,#1a1066,#0d2040); border:1px solid var(--primary); border-radius:16px; padding:20px 22px; margin-bottom:20px; animation:revealIn .28s ease; }
+  @keyframes revealIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+  .quiz-reveal .qr-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .quiz-reveal .qr-word { font-size:1.35rem; font-weight:700; }
+  .quiz-reveal .qr-ph { color:var(--primary-light); font-size:.95rem; }
+  .quiz-reveal .qr-pos { font-size:.72rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; }
+  .quiz-reveal .qr-zh { font-size:1.05rem; font-weight:600; margin-bottom:10px; }
+  .quiz-reveal .qr-ex { font-size:.9rem; color:var(--text2); line-height:1.65; font-style:italic; }
+  .quiz-reveal .qr-ex mark { background:rgba(67,233,123,.22); color:var(--accent); padding:0 3px; border-radius:4px; font-style:normal; font-weight:600; }
+  .quiz-reveal .qr-speak { background:rgba(108,99,255,.18); border:none; border-radius:8px; color:var(--primary-light); cursor:pointer; font-size:1rem; padding:5px 10px; line-height:1; }
+  .quiz-reveal .qr-speak:hover { background:rgba(108,99,255,.32); }
+  .quiz-next-btn { display:block; width:100%; margin-top:14px; background:var(--primary); color:#fff; border:none; padding:12px; border-radius:10px; cursor:pointer; font-size:.95rem; font-weight:600; }
+  .quiz-next-btn:hover { opacity:.88; }
 
   /* === PROGRESS === */
   .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
@@ -158,6 +180,8 @@
   .nav-auth { margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .auth-btn { background:none; border:1.5px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:.8rem; transition:.2s; white-space:nowrap; }
   .auth-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .install-btn { border-color:var(--accent); color:var(--accent); }
+  .install-btn:hover { border-color:var(--accent); color:#111; background:var(--accent); }
   .auth-avatar { width:28px; height:28px; border-radius:50%; }
   .auth-name { font-size:.78rem; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sync-dot { width:8px; height:8px; border-radius:50%; background:var(--border); flex-shrink:0; }
@@ -189,12 +213,22 @@
     <button class="nav-tab" onclick="showSection('vocab')">📖 單字庫</button>
   </div>
   <div class="nav-auth">
+    <button class="auth-btn install-btn" id="install-btn" onclick="installApp()" style="display:none">📲 安裝App</button>
     <span class="sync-dot" id="sync-dot" title="同步狀態"></span>
     <div id="auth-ui">
       <button class="auth-btn" onclick="signInWithGoogle()">☁️ 登入同步</button>
     </div>
   </div>
 </nav>
+
+<!-- iOS 安裝說明 -->
+<div id="ios-install" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px 18px 0 0;padding:24px 22px calc(24px + env(safe-area-inset-bottom));max-width:460px;width:100%;">
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">📲 安裝到主畫面</div>
+    <p style="color:var(--text2);font-size:.9rem;line-height:1.8;margin-bottom:16px;">在 Safari 底部點 <b>分享</b> <span style="font-size:1.1rem">􀈂</span>（方框加箭頭）圖示，選擇 <b>「加入主畫面」</b>，即可像 App 一樣全螢幕開啟、離線使用。</p>
+    <button class="btn-primary" style="width:100%" onclick="document.getElementById('ios-install').style.display='none'">知道了</button>
+  </div>
+</div>
 
 <main>
   <!-- FLASHCARD -->
@@ -237,7 +271,7 @@
         <div class="quiz-progress-label"><span id="q-prog-text">0 / 0</span><span id="q-score-text">正確：0</span></div>
         <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="q-pbar" style="width:0%"></div></div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <select id="q-topic" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
           <option value="all">全部</option>
           <option value="level1">Level 1</option>
@@ -246,6 +280,12 @@
           <option value="level4">Level 4</option>
           <option value="level5">Level 5</option>
           <option value="level6">Level 6</option>
+        </select>
+        <select id="q-count" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;">
+          <option value="10">10 題</option>
+          <option value="20" selected>20 題</option>
+          <option value="30">30 題</option>
+          <option value="50">50 題</option>
         </select>
         <button class="btn-primary" onclick="startQuiz()" style="font-size:.85rem;padding:8px 16px;">開始測驗</button>
       </div>
@@ -6496,13 +6536,13 @@ function initFlashcard() {
   const words = getFilteredWords(topic, mode);
   // smart mode already orders (due shuffled + new sequential); others get full shuffle
   FC.deck = mode === 'smart' ? words : shuffle(words);
-  FC.idx = 0; FC.flipped = false; FC.hardCards = [];
+  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set();
   renderFC();
 }
 
 function replayHard() {
   FC.deck = shuffle([...FC.hardCards]);
-  FC.idx = 0; FC.flipped = false; FC.hardCards = [];
+  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set();
   renderFC();
 }
 
@@ -6535,7 +6575,8 @@ function renderFC() {
     const h = nextMs ? ((nextMs - Date.now()) / 3600000) : null;
     const nextInfo = h !== null ? (h < 1 ? '⏰ 幾分鐘後有單字需要複習' : `⏰ 下次複習：約 ${Math.ceil(h)} 小時後`) : '';
     const hardBtn = hardCount > 0 ? `<button class="btn-primary" style="margin-bottom:8px" onclick="replayHard()">🔄 再練不熟的字（${hardCount}個）</button><br>` : '';
-    el.innerHTML = `<div class="fc-done"><div class="big-icon">🏆</div><h2>本輪完成！</h2><p style="margin-bottom:16px">已複習 ${FC.deck.length} 個單字</p>${hardBtn}<button class="btn-primary" style="background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="initFlashcard()">🔀 重新開始</button><p style="color:var(--text2);font-size:.82rem;margin-top:14px">${nextInfo}</p></div>`;
+    const reviewedCount = FC.reviewed ? FC.reviewed.size : FC.deck.length;
+    el.innerHTML = `<div class="fc-done"><div class="big-icon">🏆</div><h2>本輪完成！</h2><p style="margin-bottom:16px">已複習 ${reviewedCount} 個單字</p>${hardBtn}<button class="btn-primary" style="background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="initFlashcard()">🔀 重新開始</button><p style="color:var(--text2);font-size:.82rem;margin-top:14px">${nextInfo}</p></div>`;
     return;
   }
   const w = FC.deck[FC.idx];
@@ -6591,6 +6632,7 @@ function rate(q) {
     const pos = Math.min(FC.idx + 6, FC.deck.length);
     FC.deck.splice(pos, 0, w);
   }
+  if (FC.reviewed) FC.reviewed.add(w.id);
   fsrs(w.id, q);
   FC.idx++;
   renderFC();
@@ -6610,9 +6652,13 @@ document.addEventListener('keydown', e => {
     if (e.key === '1') { if (FC.flipped) rate(0); }
     if (e.key === '2') { if (FC.flipped) rate(3); }
     if (e.key === '3') { if (FC.flipped) rate(5); }
-  } else if (sec.id === 'sec-quiz' && !QZ.answered && QZ.deck.length) {
-    const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= 4) { const b = document.getElementById('qopt-' + (n - 1)); if (b) b.click(); }
+  } else if (sec.id === 'sec-quiz' && QZ.deck.length) {
+    if (QZ.answered) {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') { e.preventDefault(); nextQuiz(); }
+    } else {
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 4) { const b = document.getElementById('qopt-' + (n - 1)); if (b) b.click(); }
+    }
   }
 });
 
@@ -6621,7 +6667,8 @@ let QZ = { deck:[], idx:0, correct:0, answered:false };
 
 function startQuiz() {
   const topic = document.getElementById('q-topic').value;
-  QZ.deck = shuffle(getFilteredWords(topic, 'all').slice(0, 20));
+  const count = parseInt(document.getElementById('q-count').value) || 20;
+  QZ.deck = shuffle(getFilteredWords(topic, 'all')).slice(0, count);
   QZ.idx = 0; QZ.correct = 0; QZ.answered = false;
   renderQuiz();
 }
@@ -6656,8 +6703,15 @@ function renderQuiz() {
       </div>
       <div style="text-align:center;color:var(--text2);font-size:.75rem;margin-top:14px;">按 1～4 鍵快速作答</div>
     </div>
+    <div id="quiz-reveal" class="quiz-reveal" style="display:none"></div>
   `;
   QZ.answered = false;
+}
+
+function nextQuiz() {
+  if (!QZ.answered) return;
+  QZ.idx++;
+  renderQuiz();
 }
 
 function answerQuiz(chosen, correct, btnIdx) {
@@ -6676,8 +6730,25 @@ function answerQuiz(chosen, correct, btnIdx) {
     fsrs(correct, 0);
   }
   document.getElementById('q-score-text').textContent = `正確：${QZ.correct}`;
-  // 答錯時多停留一下，讓使用者看清楚正確答案
-  setTimeout(() => { QZ.idx++; renderQuiz(); }, chosen === correct ? 900 : 1800);
+  // 作答後展開解答卡：音標 / 詞性 / 中文 / 例句（highlight 該字）並朗讀，強化記憶
+  const w = QZ.deck[QZ.idx];
+  const wordRe = new RegExp('\\b' + w.w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\w*', 'gi');
+  const exHtml = (w.ex || '').replace(wordRe, m => `<mark>${m}</mark>`);
+  const reveal = document.getElementById('quiz-reveal');
+  const wEsc = w.w.replace(/'/g,"\\'");
+  reveal.innerHTML = `
+    <div class="qr-top">
+      <span class="qr-word">${w.w}</span>
+      <span class="qr-ph">${w.ph}</span>
+      <span class="qr-pos">${w.pos}</span>
+      <button class="qr-speak" onclick="speak('${wEsc}','en-US')" title="朗讀英文">🔊</button>
+    </div>
+    <div class="qr-zh">${w.zh}</div>
+    <div class="qr-ex">"${exHtml}"</div>
+    <button class="quiz-next-btn" onclick="nextQuiz()">${QZ.idx + 1 >= QZ.deck.length ? '看結果 →' : '下一題 →'}　（空白鍵 / Enter）</button>
+  `;
+  reveal.style.display = 'block';
+  speak(w.w, 'en-US');
 }
 
 function updateQPbar(cur, total) {
@@ -6915,6 +6986,43 @@ function initFirebase() {
 }
 
 initFirebase();
+
+// ===================== PWA / 手機 App 模式 =====================
+(function(){
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const btn = document.getElementById('install-btn');
+
+  // Android / Chrome：攔截安裝提示，顯示安裝鈕
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    window._deferredPrompt = e;
+    if (btn && !isStandalone) btn.style.display = '';
+  });
+  window.addEventListener('appinstalled', () => {
+    window._deferredPrompt = null;
+    if (btn) btn.style.display = 'none';
+  });
+  // iOS Safari：無 beforeinstallprompt，未安裝時直接顯示安裝鈕（點擊給說明）
+  if (isIOS && !isStandalone && btn) btn.style.display = '';
+
+  // 註冊 Service Worker（離線可用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+})();
+
+function installApp(){
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  if (window._deferredPrompt){
+    window._deferredPrompt.prompt();
+    window._deferredPrompt.userChoice.finally(()=>{ window._deferredPrompt = null; });
+  } else if (isIOS){
+    document.getElementById('ios-install').style.display = 'flex';
+  } else {
+    document.getElementById('ios-install').style.display = 'flex';
+  }
+}
 </script>
 </body>
 </html>
