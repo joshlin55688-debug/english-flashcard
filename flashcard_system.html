@@ -220,6 +220,7 @@
     </div>
   </div>
 </nav>
+<div id="sync-alert" role="alert" style="display:none;background:var(--red);color:#fff;padding:10px 16px;text-align:center;font-size:.85rem;font-weight:600;"></div>
 
 <!-- iOS 安裝說明 -->
 <div id="ios-install" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-end;justify-content:center;">
@@ -257,6 +258,8 @@
         <option value="0">新字 無限</option>
       </select>
       <button onclick="initFlashcard()">🔀 隨機</button>
+      <button id="fc-voice-btn" onclick="toggleAutoSpeak()" title="切換翻卡時自動朗讀">🔊 自動朗讀</button>
+      <button id="fc-undo-btn" onclick="undoRate()" title="復原上一次評分（Z 鍵）" style="display:none">↩ 復原</button>
       <div class="fc-progress-bar-wrap"><div class="fc-progress-bar" id="fc-pbar" style="width:0%"></div></div>
       <span class="fc-counter" id="fc-counter">0 / 0</span>
     </div>

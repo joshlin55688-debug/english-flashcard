@@ -24,10 +24,23 @@ async function syncFirestore() {
       });
     });
     setSyncDot('synced');
+    showSyncAlert('');
   } catch(e) {
     setSyncDot('offline');
     console.warn('Firestore sync:', e);
+    // 單純沒網路時紅點就夠了；有網路卻失敗才需要明顯提醒
+    if (navigator.onLine === false) return;
+    showSyncAlert(e && e.code === 'permission-denied'
+      ? '⚠️ 同步失敗：雲端拒絕存取，進度目前只存在這台裝置'
+      : '⚠️ 同步失敗，進度目前只存在這台裝置，稍後會自動重試');
   }
+}
+
+function showSyncAlert(msg) {
+  const el = document.getElementById('sync-alert');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
 }
 
 function flushSave() {
@@ -38,9 +51,22 @@ function flushSave() {
   }
 }
 window.addEventListener('pagehide', flushSave);
+// 回到前景或恢復連線時重新合併雲端進度，不打斷正在看的卡片
+async function pullFromCloud() {
+  if (!window._fbUser || !window._fbDb) return;
+  clearTimeout(_fbSaveTimer);
+  _fbSaveTimer = null;
+  await syncFirestore();
+  updateDueInfo();
+  const active = document.querySelector('.section.active');
+  if (active && active.id === 'sec-progress') renderProgress();
+  if (active && active.id === 'sec-vocab') renderVocab();
+}
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') flushSave();
+  else pullFromCloud();
 });
+window.addEventListener('online', pullFromCloud);
 
 function saveState() {
   localStorage.setItem('flState', JSON.stringify(STATE));
@@ -75,6 +101,22 @@ if (window.speechSynthesis) {
   pickVoices();
   speechSynthesis.onvoiceschanged = pickVoices;
 }
+// 自動朗讀開關只存在這台裝置；手動按 🔊 不受影響
+let autoSpeakOn = true;
+try { autoSpeakOn = localStorage.getItem('flAutoSpeak') !== 'off'; } catch(e) {}
+function autoSpeak(text, lang) { if (autoSpeakOn) speak(text, lang); }
+function updateVoiceBtn() {
+  const btn = document.getElementById('fc-voice-btn');
+  if (btn) btn.textContent = autoSpeakOn ? '🔊 自動朗讀' : '🔇 自動朗讀';
+}
+function toggleAutoSpeak() {
+  autoSpeakOn = !autoSpeakOn;
+  try { localStorage.setItem('flAutoSpeak', autoSpeakOn ? 'on' : 'off'); } catch(e) {}
+  if (!autoSpeakOn && window.speechSynthesis) window.speechSynthesis.cancel();
+  updateVoiceBtn();
+}
+updateVoiceBtn();
+
 function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -160,6 +202,7 @@ function fsrs(id, q) { // q: 0=Again, 3=Good, 5=Easy
   }
 
   s.lastReview = now;
+  s.modifiedAt = now;
   // stability = days until 90% retention; that IS the next interval
   s.due = now + Math.max(1, Math.round(s.stability)) * 86400000;
   s.status = s.stability >= 21 ? 'mastered' : (s.reps > 0 ? 'learning' : 'new');
@@ -215,6 +258,8 @@ function updateDueInfo() {
   });
   const doneToday = (STATE._streak && STATE._streak.week && STATE._streak.week[getDateStr()]) || 0;
   el.textContent = `📌 待複習 ${due} ・ 未學習 ${newCount} ・ 今日已複習 ${doneToday}`;
+  const undoBtn = document.getElementById('fc-undo-btn');
+  if (undoBtn) undoBtn.style.display = FC.undo ? '' : 'none';
 }
 
 function initFlashcard() {
@@ -223,13 +268,13 @@ function initFlashcard() {
   const words = getFilteredWords(topic, mode);
   // smart mode already orders (due shuffled + new sequential); others get full shuffle
   FC.deck = mode === 'smart' ? words : shuffle(words);
-  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set();
+  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set(); FC.undo = null;
   renderFC();
 }
 
 function replayHard() {
   FC.deck = shuffle([...FC.hardCards]);
-  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set();
+  FC.idx = 0; FC.flipped = false; FC.hardCards = []; FC.reviewed = new Set(); FC.undo = null;
   renderFC();
 }
 
@@ -297,7 +342,7 @@ function renderFC() {
     <div id="rating-hint" style="text-align:center;color:var(--text2);font-size:.8rem;margin-top:10px;">翻牌後評分 • 空白鍵翻牌 • 1/2/3 評分</div>
   `;
   FC.flipped = false;
-  setTimeout(function(){ speak(w.w, 'en-US'); }, 300);
+  setTimeout(function(){ autoSpeak(w.w, 'en-US'); }, 300);
 }
 
 function flipCard() {
@@ -311,7 +356,7 @@ function flipCard() {
     const hint = document.getElementById('rating-hint');
     if (hint) hint.style.display = 'none';
     var w = FC.deck[FC.idx];
-    if (w) setTimeout(function(){ speak(w.zh, 'zh-TW'); }, 500);
+    if (w) setTimeout(function(){ autoSpeak(w.zh, 'zh-TW'); }, 500);
   }
 }
 
@@ -319,6 +364,15 @@ function rate(q) {
   if (!FC.deck.length || FC.idx >= FC.deck.length) return;
   const w = FC.deck[FC.idx];
   if (!w) return;
+  FC.undo = {
+    id: w.id,
+    card: Object.assign({}, STATE[w.id]),
+    streak: STATE._streak ? JSON.parse(JSON.stringify(STATE._streak)) : null,
+    deck: FC.deck.slice(),
+    idx: FC.idx,
+    hardCards: FC.hardCards.slice(),
+    reviewed: new Set(FC.reviewed || [])
+  };
   if (q === 0) {
     if (!FC.hardCards.includes(w)) FC.hardCards.push(w);
     // 不熟的字 5 張後再出現一次，當場強化記憶
@@ -328,6 +382,17 @@ function rate(q) {
   if (FC.reviewed) FC.reviewed.add(w.id);
   fsrs(w.id, q);
   FC.idx++;
+  renderFC();
+}
+
+function undoRate() {
+  const u = FC.undo;
+  if (!u) return;
+  STATE[u.id] = Object.assign({}, u.card, { modifiedAt: Date.now() });
+  if (u.streak) STATE._streak = u.streak; else delete STATE._streak;
+  FC.deck = u.deck; FC.idx = u.idx; FC.hardCards = u.hardCards; FC.reviewed = u.reviewed;
+  FC.flipped = false; FC.undo = null;
+  saveState();
   renderFC();
 }
 
@@ -347,6 +412,7 @@ document.addEventListener('keydown', e => {
   const sec = document.querySelector('.section.active');
   if (!sec) return;
   if (sec.id === 'sec-flashcard') {
+    if (e.key === 'z' && !e.ctrlKey && !e.metaKey) { undoRate(); return; }
     if (!FC.deck.length || FC.idx >= FC.deck.length) return;
     if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); if (!FC.flipped) flipCard(); }
     if (e.key === '1') { if (FC.flipped) rate(0); }
@@ -448,7 +514,7 @@ function answerQuiz(chosen, correct, btnIdx) {
     <button class="quiz-next-btn" onclick="nextQuiz()">${QZ.idx + 1 >= QZ.deck.length ? '看結果 →' : '下一題 →'}　（空白鍵 / Enter）</button>
   `;
   reveal.style.display = 'block';
-  speak(w.w, 'en-US');
+  autoSpeak(w.w, 'en-US');
 }
 
 function updateQPbar(cur, total) {
@@ -595,6 +661,7 @@ function updateAuthUI(user) {
   } else {
     el.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">☁️ 登入同步</button>`;
     setSyncDot('idle');
+    showSyncAlert('');
   }
 }
 

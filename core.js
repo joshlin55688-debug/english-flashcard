@@ -117,8 +117,9 @@
         } else if (!cardL && cardR) {
           merged[key] = Object.assign({}, cardR);
         } else if (cardL && cardR) {
-          const revL = cardL.lastReview || 0;
-          const revR = cardR.lastReview || 0;
+          // modifiedAt 涵蓋復原評分：lastReview 會倒退，但這仍是最新的修改
+          const revL = cardL.modifiedAt || cardL.lastReview || 0;
+          const revR = cardR.modifiedAt || cardR.lastReview || 0;
           if (revR > revL) {
             merged[key] = Object.assign({}, cardR);
           } else if (revL > revR) {
@@ -146,7 +147,7 @@
       const val = s[key];
       if (key === '_streak') {
         result[key] = val;
-      } else if (val && val.status === 'new' && (val.reps === 0 || !val.reps)) {
+      } else if (val && val.status === 'new' && (val.reps === 0 || !val.reps) && !val.modifiedAt) {
         continue;
       } else {
         result[key] = val;

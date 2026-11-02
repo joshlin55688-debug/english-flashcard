@@ -91,6 +91,16 @@ test('compactForSync drops only untouched cards', () => {
   assert.deepEqual(core.compactForSync({ a: untouched, b: learned, _streak: streak }), { b: learned, _streak: streak });
 });
 
+test('an undone rating survives merge and sync even though lastReview moved back', () => {
+  const rated = card({ reps: 1, lastReview: 500, modifiedAt: 500 });
+  const undone = card({ status: 'new', reps: 0, lastReview: 0, modifiedAt: 600 });
+  assert.deepEqual(core.mergeStates({ a: undone }, { a: rated }).a, undone);
+  assert.deepEqual(core.mergeStates({ a: rated }, { a: undone }).a, undone);
+  assert.deepEqual(core.compactForSync({ a: undone }), { a: undone });
+  const legacy = card({ reps: 4, lastReview: 700 });
+  assert.deepEqual(core.mergeStates({ a: undone }, { a: legacy }).a, legacy);
+});
+
 test('parseBackup accepts valid backups and rejects anything else', () => {
   const state = { a: card(), _streak: { last: 'x', count: 1, week: {} } };
   assert.deepEqual(core.parseBackup(JSON.stringify(core.makeBackup(state, 1234))), state);
