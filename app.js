@@ -117,6 +117,14 @@ function toggleAutoSpeak() {
 }
 updateVoiceBtn();
 
+function speakExample(id) {
+  const w = WORDS.find(x => x.id === id);
+  if (w) speak(w.ex, 'en-US');
+}
+function exSpeakBtn(w) {
+  return `<button class="ex-speak" onclick="event.stopPropagation();speakExample('${w.id}')" title="朗讀例句">🔊</button>`;
+}
+
 function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -358,7 +366,7 @@ function renderFC() {
           <div class="card-phonetic">${w.ph}</div>
           <div class="card-pos">${w.pos}</div>
           <div class="card-meaning">${w.zh}</div>
-          <div class="card-example">"${w.ex}"</div>
+          <div class="card-example">"${w.ex}"${exSpeakBtn(w)}</div>
           <button class="speak-btn" onclick="event.stopPropagation();speak('${w.w.replace(/'/g,"\\'")}','en-US')" title="朗讀英文">🔊</button>
         </div>
       </div>
@@ -539,7 +547,7 @@ function answerQuiz(chosen, correct, btnIdx) {
       <button class="qr-speak" onclick="speak('${wEsc}','en-US')" title="朗讀英文">🔊</button>
     </div>
     <div class="qr-zh">${w.zh}</div>
-    <div class="qr-ex">"${exHtml}"</div>
+    <div class="qr-ex">"${exHtml}"${exSpeakBtn(w)}</div>
     <button class="quiz-next-btn" onclick="nextQuiz()">${QZ.idx + 1 >= QZ.deck.length ? '看結果 →' : '下一題 →'}　（空白鍵 / Enter）</button>
   `;
   reveal.style.display = 'block';
@@ -645,7 +653,7 @@ function renderVocab() {
     : '';
   document.getElementById('vocab-tbody').innerHTML = shown.map(w => `
     <tr>
-      <td><strong>${w.w}</strong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small></td>
+      <td><strong>${w.w}</strong><br><small style="color:var(--text2);font-size:.75rem">${w.ex}</small>${exSpeakBtn(w)}</td>
       <td style="color:var(--primary-light)">${w.ph}</td>
       <td><span style="font-size:.75rem;background:var(--primary);color:#fff;padding:2px 6px;border-radius:8px">${w.pos}</span></td>
       <td>${w.zh}</td>
