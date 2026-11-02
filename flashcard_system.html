@@ -250,12 +250,19 @@
         <option value="new">只看新字</option>
         <option value="all">全部單字</option>
       </select>
-      <select id="fc-new-limit" onchange="initFlashcard()">
-        <option value="10">新字 10</option>
-        <option value="20" selected>新字 20</option>
-        <option value="30">新字 30</option>
-        <option value="50">新字 50</option>
-        <option value="0">新字 無限</option>
+      <select id="fc-new-limit" onchange="saveDailyLimits();initFlashcard()">
+        <option value="10">每日新字 10</option>
+        <option value="20" selected>每日新字 20</option>
+        <option value="30">每日新字 30</option>
+        <option value="50">每日新字 50</option>
+        <option value="0">每日新字 無限</option>
+      </select>
+      <select id="fc-review-limit" onchange="saveDailyLimits();initFlashcard()">
+        <option value="50">每日複習 50</option>
+        <option value="100">每日複習 100</option>
+        <option value="200" selected>每日複習 200</option>
+        <option value="500">每日複習 500</option>
+        <option value="0">每日複習 無限</option>
       </select>
       <button onclick="initFlashcard()">🔀 隨機</button>
       <button id="fc-voice-btn" onclick="toggleAutoSpeak()" title="切換翻卡時自動朗讀">🔊 自動朗讀</button>

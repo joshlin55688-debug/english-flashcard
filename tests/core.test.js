@@ -101,6 +101,42 @@ test('an undone rating survives merge and sync even though lastReview moved back
   assert.deepEqual(core.mergeStates({ a: undone }, { a: legacy }).a, legacy);
 });
 
+test('fuzzInterval matches the Anki fuzz ranges', () => {
+  assert.equal(core.fuzzInterval(1, 0.5), 1);
+  assert.equal(core.fuzzInterval(2, 0.99), 2);
+  assert.equal(core.fuzzInterval(3, 0), 2);
+  assert.equal(core.fuzzInterval(3, 0.999), 4);
+  assert.equal(core.fuzzInterval(30, 0), 27);
+  assert.equal(core.fuzzInterval(30, 0.999), 33);
+  assert.equal(core.fuzzInterval(100, 0), 93);
+  assert.equal(core.fuzzInterval(100, 0.999), 107);
+  for (let i = 0; i < 200; i++) {
+    const v = core.fuzzInterval(10);
+    assert.ok(Number.isInteger(v) && v >= 8 && v <= 12, `out of range: ${v}`);
+  }
+});
+
+test('dailyCounts derives usage from card state', () => {
+  const today = '2026-03-10';
+  const noon = new Date(2026, 2, 10, 12).getTime();
+  const yesterday = new Date(2026, 2, 9, 23).getTime();
+  const state = {
+    a: card({ firstSeen: today, lastReview: noon }),
+    b: card({ firstSeen: '2026-03-01', lastReview: noon }),
+    c: card({ lastReview: noon }),
+    d: card({ firstSeen: '2026-03-01', lastReview: yesterday }),
+    e: card({ status: 'new', reps: 0, lastReview: 0 }),
+    _streak: { last: today, count: 1, week: {} },
+  };
+  assert.deepEqual(core.dailyCounts(state, today), { newCards: 1, reviews: 2 });
+});
+
+test('remaining treats 0 as unlimited and never goes negative', () => {
+  assert.equal(core.remaining(20, 5), 15);
+  assert.equal(core.remaining(20, 25), 0);
+  assert.equal(core.remaining(0, 999), Infinity);
+});
+
 test('parseBackup accepts valid backups and rejects anything else', () => {
   const state = { a: card(), _streak: { last: 'x', count: 1, week: {} } };
   assert.deepEqual(core.parseBackup(JSON.stringify(core.makeBackup(state, 1234))), state);

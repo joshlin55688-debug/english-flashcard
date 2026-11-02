@@ -133,11 +133,12 @@ function getDateStr(d) { return FlashCore.localDateStr(d); }
 
 // ===================== FSRS-4.5 =====================
 const FSRS_W = [
-  0.4072, 1.1829, 3.1262, 4.2275,   // S₀: initial stability per rating 1-4
-  4.6790, 1.1507, 0.8996, 0.031,    // difficulty params
-  1.9813, 0.1100, 0.2900,            // recall stability params
-  2.2700, 0.2500, 0.1000, 0.9000,   // forget stability params
-  0.1640, 2.6100                     // hard penalty, easy bonus
+  // FSRS-4.5 官方預設值（open-spaced-repetition/awesome-fsrs wiki: The Algorithm）
+  0.4872, 1.4003, 3.7145, 13.8206,  // S₀: initial stability per rating 1-4
+  5.1618, 1.2298, 0.8975, 0.031,    // difficulty params
+  1.6474, 0.1367, 1.0461,            // recall stability params
+  2.1072, 0.0793, 0.3246, 1.587,    // forget stability params
+  0.2272, 2.8755                     // hard penalty, easy bonus
 ];
 const FSRS_DECAY = -0.5;
 const FSRS_FACTOR = 19 / 81; // = 0.9^(1/-0.5) - 1
@@ -166,6 +167,7 @@ function fsrs(id, q) { // q: 0=Again, 3=Good, 5=Easy
 
   if (isNew) {
     // First review of a new card
+    s.firstSeen = getDateStr();
     s.stability = FSRS_W[rating - 1];
     s.difficulty = Math.min(10, Math.max(1, FSRS_W[4] - FSRS_W[5] * (rating - 3)));
     s.lapses = 0;
@@ -204,7 +206,7 @@ function fsrs(id, q) { // q: 0=Again, 3=Good, 5=Easy
   s.lastReview = now;
   s.modifiedAt = now;
   // stability = days until 90% retention; that IS the next interval
-  s.due = now + Math.max(1, Math.round(s.stability)) * 86400000;
+  s.due = now + FlashCore.fuzzInterval(Math.max(1, Math.round(s.stability))) * 86400000;
   s.status = s.stability >= 21 ? 'mastered' : (s.reps > 0 ? 'learning' : 'new');
 
   STATE._streak = FlashCore.applyReview(STATE._streak, getDateStr());
@@ -225,23 +227,44 @@ function showSection(id) {
 let FC = { deck:[], idx:0, flipped:false, hardCards:[] };
 
 function getFilteredWords(topic, mode) {
-  const newLimit = parseInt(document.getElementById('fc-new-limit').value);
   let pool = WORDS.filter(w => topic==='all' || w.topic===topic);
+  if (mode === 'all') return pool;
 
-  if (mode === 'smart') {
-    // Due cards (learning/review) always shown first
-    const due = pool.filter(w => FlashCore.isDue(STATE[w.id]));
-    // New cards: take from front (sequential within level) up to limit
-    const newCards = pool.filter(w => STATE[w.id].status === 'new');
-    const limitedNew = newLimit === 0 ? newCards : newCards.slice(0, newLimit);
-    return [...shuffle(due), ...limitedNew];
-  }
-  if (mode === 'due') return pool.filter(w => FlashCore.isDue(STATE[w.id]));
-  if (mode === 'new') {
-    const newCards = pool.filter(w => STATE[w.id].status === 'new');
-    return newLimit === 0 ? newCards : newCards.slice(0, newLimit);
-  }
-  return pool; // all
+  const used = FlashCore.dailyCounts(STATE, getDateStr());
+  const pickNew = () => pool.filter(w => STATE[w.id].status === 'new')
+    .slice(0, FlashCore.remaining(getDailyLimit('fc-new-limit'), used.newCards));
+  // 超過複習上限時先排逾期最久的
+  const pickDue = () => shuffle(pool.filter(w => FlashCore.isDue(STATE[w.id]))
+    .sort((a, b) => STATE[a.id].due - STATE[b.id].due)
+    .slice(0, FlashCore.remaining(getDailyLimit('fc-review-limit'), used.reviews)));
+
+  if (mode === 'smart') return [...pickDue(), ...pickNew()];
+  if (mode === 'due') return pickDue();
+  return pickNew();
+}
+
+function getDailyLimit(id) {
+  return parseInt(document.getElementById(id).value, 10);
+}
+
+// 每日上限只存在這台裝置
+function saveDailyLimits() {
+  try {
+    localStorage.setItem('flNewLimit', document.getElementById('fc-new-limit').value);
+    localStorage.setItem('flReviewLimit', document.getElementById('fc-review-limit').value);
+  } catch(e) {}
+}
+
+function restoreDailyLimits() {
+  const restore = (id, key) => {
+    try {
+      const v = localStorage.getItem(key);
+      const el = document.getElementById(id);
+      if (v !== null && [...el.options].some(o => o.value === v)) el.value = v;
+    } catch(e) {}
+  };
+  restore('fc-new-limit', 'flNewLimit');
+  restore('fc-review-limit', 'flReviewLimit');
 }
 
 function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -257,7 +280,9 @@ function updateDueInfo() {
     else if (FlashCore.isDue(s, now)) due++;
   });
   const doneToday = (STATE._streak && STATE._streak.week && STATE._streak.week[getDateStr()]) || 0;
-  el.textContent = `📌 待複習 ${due} ・ 未學習 ${newCount} ・ 今日已複習 ${doneToday}`;
+  const used = FlashCore.dailyCounts(STATE, getDateStr());
+  const fmt = (n, limit) => limit === 0 ? `${n}` : `${n}/${limit}`;
+  el.textContent = `📌 待複習 ${due} ・ 未學習 ${newCount} ・ 今日已複習 ${doneToday} ・ 今日新字 ${fmt(used.newCards, getDailyLimit('fc-new-limit'))} ・ 今日複習 ${fmt(used.reviews, getDailyLimit('fc-review-limit'))}`;
   const undoBtn = document.getElementById('fc-undo-btn');
   if (undoBtn) undoBtn.style.display = FC.undo ? '' : 'none';
 }
@@ -285,6 +310,10 @@ function renderFC() {
     const mode = document.getElementById('fc-mode').value;
     let msg = '請更換篩選條件';
     let nextInfo = '';
+    if (mode === 'smart' || mode === 'new') {
+      msg = '今天的額度完成了！';
+      nextInfo = '想多學可以調高每日上限';
+    }
     if (mode === 'due') {
       const allFuture = WORDS.map(w => STATE[w.id].due).filter(d => d > Date.now());
       if (allFuture.length > 0) {
@@ -626,6 +655,7 @@ function renderVocab() {
 }
 
 // ===================== INIT =====================
+restoreDailyLimits();
 initFlashcard();
 renderVocab();
 

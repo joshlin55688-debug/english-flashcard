@@ -140,6 +140,44 @@
     return merged;
   }
 
+  // 與 Anki／py-fsrs 相同的 fuzz 區間，避免同時學的字集中在同一天到期
+  const FUZZ_RANGES = [
+    { start: 2.5, end: 7, factor: 0.15 },
+    { start: 7, end: 20, factor: 0.1 },
+    { start: 20, end: Infinity, factor: 0.05 }
+  ];
+
+  function fuzzInterval(days, rand) {
+    if (days < 2.5) return days;
+    let delta = 1;
+    for (const r of FUZZ_RANGES) {
+      delta += r.factor * Math.max(Math.min(days, r.end) - r.start, 0);
+    }
+    const max = Math.round(days + delta);
+    const min = Math.min(Math.max(2, Math.round(days - delta)), max);
+    const x = rand === undefined ? Math.random() : rand;
+    return Math.floor(x * (max - min + 1)) + min;
+  }
+
+  // 由卡片狀態推算今日用量，因此多裝置與復原評分都不必另外記帳
+  function dailyCounts(state, today) {
+    const counts = { newCards: 0, reviews: 0 };
+    const s = state || {};
+    for (const key of Object.keys(s)) {
+      if (key === '_streak') continue;
+      const card = s[key];
+      if (!card) continue;
+      if (card.firstSeen === today) counts.newCards++;
+      else if (card.lastReview && localDateStr(new Date(card.lastReview)) === today) counts.reviews++;
+    }
+    return counts;
+  }
+
+  // limit 為 0 代表不限
+  function remaining(limit, used) {
+    return limit === 0 ? Infinity : Math.max(0, limit - used);
+  }
+
   function compactForSync(state) {
     const result = {};
     const s = state || {};
@@ -196,6 +234,9 @@
     applyReview: applyReview,
     mergeStates: mergeStates,
     compactForSync: compactForSync,
+    fuzzInterval: fuzzInterval,
+    dailyCounts: dailyCounts,
+    remaining: remaining,
     makeBackup: makeBackup,
     parseBackup: parseBackup
   };
